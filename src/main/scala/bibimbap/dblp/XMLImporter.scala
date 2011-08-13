@@ -14,7 +14,7 @@ import org.squeryl.PrimitiveTypeMode._
  * works by clearing the database first, so be careful.  It uses the Settings
  * object to determine how to access the database. It assumes the database
  * already exists and the tables have been created according to the schema. */
-class XMLImporter(file : String, settings : Settings = DefaultSettings) {
+class XMLImporter(file : String, settings : Settings) {
   private val db = DB(settings, false)
 
   def importPersons : MutableMap[String,Person] = {

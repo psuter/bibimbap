@@ -3,7 +3,7 @@ package dblp
 
 import org.squeryl.PrimitiveTypeMode._
 
-class Search(settings : Settings = DefaultSettings) {
+class Search(settings : Settings) {
   private val db = DB(settings, false)
 
   def search(string : String) : Unit = {

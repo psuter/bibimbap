@@ -8,6 +8,8 @@ class DBLPModule(settings : Settings) extends Module(settings) {
 
   val keyword = "dblp"
 
+  override val requiredSettings = List("db.type", "db.dsn", "db.username", "db.password")
+
   val searchAction = new Action[Seq[SearchResult]] {
     val keyword = "search"
     val description = "Search for records in DBLP."
@@ -23,7 +25,7 @@ class DBLPModule(settings : Settings) extends Module(settings) {
     val description = "Delete all data and reimport from dblp.xml."
 
     def run(args : String*) : Unit = {
-      val importer = new XMLImporter("./dblp-local/dblp.xml")
+      val importer = new XMLImporter("./dblp-local/dblp.xml", settings)
       importer.importEntries
     }
   }
@@ -37,7 +39,7 @@ class DBLPModule(settings : Settings) extends Module(settings) {
     }
   }
 
-  private val search = new Search
+  private val search = new Search(settings)
 
   override val moreActions = Seq(searchAction, importAction, createTablesAction)
 }

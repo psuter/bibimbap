@@ -7,6 +7,8 @@ abstract class Module(val settings : Settings) {
 
   val keyword : String
 
+  def requiredSettings : List[String] = Nil
+
   final def actions : Seq[Action[_]] = helpAction +: moreActions
 
   def moreActions : Seq[Action[_]] = Seq.empty

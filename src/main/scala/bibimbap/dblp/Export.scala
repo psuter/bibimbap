@@ -3,7 +3,7 @@ package dblp
 
 import bibimbap.data._
 
-class Export(settings : Settings = DefaultSettings) {
+class Export(settings : Settings) {
   val db = DB(settings, false)
 
   def export(entry : Entry) : Option[BibTeXEntry] = entry.kind match {

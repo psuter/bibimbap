@@ -65,7 +65,7 @@ object DB {
   private var instance : DB = null
   private var usedSettings : Settings = null
 
-  def apply(settings : Settings = DefaultSettings, create : Boolean = false) : DB = {
+  def apply(settings : Settings, create : Boolean = false) : DB = {
     if(instance == null) {
       instance = new DB(settings, create)
       usedSettings = settings
@@ -120,24 +120,30 @@ class DB(settings : Settings = DefaultSettings, create : Boolean = false) {
   val editorship = DB.DBLP.editorship
 
   private def init() {
-    settings.dblpDBType match {
-      case "h2" => {
+    settings.get("dblp", "db.type").get match {
+      case "h2" | "H2" => {
         Class.forName("org.h2.Driver")
 
         SessionFactory.concreteFactory = Some(() => {
           Session.create(
-            DriverManager.getConnection(settings.dblpDBDSN, settings.dblpDBUserName, settings.dblpDBPassword),
+            DriverManager.getConnection(
+              settings.get("dblp", "db.dsn").get,
+              settings.get("dblp", "db.username").get,
+              settings.get("dblp", "db.password").get),
             new H2Adapter
           )
         })
       }
 
-      case "MySQL" => {
+      case "MySQL" | "mysql" | "MySql" => {
         Class.forName("com.mysql.jdbc.Driver")
 
         SessionFactory.concreteFactory = Some(() => {
           Session.create(
-            DriverManager.getConnection(settings.dblpDBDSN, settings.dblpDBUserName, settings.dblpDBPassword),
+            DriverManager.getConnection(
+              settings.get("dblp", "db.dsn").get,
+              settings.get("dblp", "db.username").get,
+              settings.get("dblp", "db.password").get),
             new MySQLAdapter
           )
         })

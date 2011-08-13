@@ -3,10 +3,19 @@ package bibimbap
 import jline._
 
 object Main {
-  private lazy val testCompletor = new SimpleCompletor(mainModule.allSubKeywords.toArray)
+  private val configFileName =
+    System.getProperty("user.home") +
+    System.getProperty("file.separator") +
+    ".bibimbapconfig"
 
   private val replID = "bibimbap> "
+
   def main(args : Array[String]) : Unit = {
+    val settings = (new ConfigFileParser(configFileName)).parse.getOrElse(DefaultSettings)
+
+    val theMainModule = mainModule(settings)
+
+    val testCompletor = new SimpleCompletor(theMainModule.allSubKeywords.toArray)
     
     var line : String = null
     val reader = new ConsoleReader
@@ -19,13 +28,13 @@ object Main {
       }
       line = line.trim
       if(line != "") {
-        mainModule.executeLine(line)
+        theMainModule.executeLine(line)
       }
-      println("")
+      settings.logger.info("")
     }
   }
 
-  private val mainModule = new Module(DefaultSettings) {
+  private def mainModule(settings : Settings) = new Module(settings) {
     val name = ""
     val keyword = "<main>"
 
@@ -52,14 +61,14 @@ object Main {
 
     override val subModules = List(
       new dblp.DBLPModule(settings),
-      DummyModule
+      new DummyModule(settings)
     )
   }
 }
 
-object DummyModule extends Module(DefaultSettings) {
+class DummyModule(settings : Settings) extends Module(settings) {
   val name = "Dummy module."
   val keyword = "dummy"
 
-  override val moreActions = List(new Action[Unit] { val keyword = "hi"; val description = "Say hi."; def run(args : String*) { DefaultSettings.logger.info("Hiiiii !") } })
+  override val moreActions = List(new Action[Unit] { val keyword = "hi"; val description = "Say hi."; def run(args : String*) { settings.logger.info("Hiiiii !") } })
 }
