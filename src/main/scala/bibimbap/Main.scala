@@ -1,6 +1,10 @@
 package bibimbap
 
+import bibimbap.data._
+
 import jline._
+
+import scala.collection.mutable.{Map=>MutableMap}
 
 object Main {
   private val configFileName =
@@ -38,6 +42,8 @@ object Main {
     val name = ""
     val keyword = "<main>"
 
+    private var searchHistory : MutableMap[Int,SearchResultEntry] = MutableMap.empty
+
     import settings.logger.{info,warn}
 
     override val moreActions = List(
@@ -56,6 +62,40 @@ object Main {
         def run(args : String*) : Nothing = {
           sys.exit(0)
         }
+      },
+
+      new Action[Unit] {
+        val keyword = "search"
+        val description = "Searches for bibliographical entries."
+        def run(args : String*) : Unit = {
+          searchHistory.clear
+
+          for(sm <- subModules; sa <- sm.searchAction) {
+            for((searchResultEntry, i) <- sa.run(args : _*).take(10).zipWithIndex) {
+              val (entry, _) = searchResultEntry
+              info("[" + i + "] " + entry.inlineString)
+              searchHistory(i) = searchResultEntry
+            }
+          }
+        }
+      },
+
+      new Action[Unit] {
+        val keyword = "show"
+        val description = "Examine entry resulting of a search."
+        def run(args : String*) : Unit = {
+          if(args.isEmpty) {
+            warn("Please provide a search result id.")
+          } else {
+            argAsInt(args(0)) match {
+              case None => warn("Please provide a numerical search result id.")
+              case Some(i) => searchHistory.get(i) match {
+                case None => warn("No entry [" + i + "] in search history.")
+                case Some(sre) => println(sre._1)
+              }
+            }
+          }
+        }
       }
     )
 
@@ -63,6 +103,8 @@ object Main {
       new dblp.DBLPModule(settings),
       new DummyModule(settings)
     )
+
+    
   }
 }
 

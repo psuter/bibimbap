@@ -3,20 +3,21 @@ package dblp
 
 import bibimbap.data._
 
-class DBLPModule(settings : Settings) extends Module(settings) {
+class DBLPModule(settings : Settings) extends Module(settings) with Search {
   val name = "Local DBLP access"
 
   val keyword = "dblp"
 
   override val requiredSettings = List("db.type", "db.dsn", "db.username", "db.password")
 
-  val searchAction = new Action[Seq[SearchResult]] {
+  override def searchAction = Some(realSearchAction)
+
+  val realSearchAction = new Action[SearchResult] {
     val keyword = "search"
     val description = "Search for records in DBLP."
 
-    def run(args : String*) : Seq[SearchResult] = {
-      search.search(args.mkString(" "))
-      Seq.empty
+    def run(args : String*) : SearchResult = {
+      search(args.mkString(" "))
     }
   }
 
@@ -39,7 +40,6 @@ class DBLPModule(settings : Settings) extends Module(settings) {
     }
   }
 
-  private val search = new Search(settings)
 
-  override val moreActions = Seq(searchAction, importAction, createTablesAction)
+  override val moreActions = Seq(realSearchAction, importAction, createTablesAction)
 }

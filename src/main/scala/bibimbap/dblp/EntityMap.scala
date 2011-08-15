@@ -43,6 +43,7 @@ object EntityMap {
     case "Ucirc"    => "Û" // "&#219;" capital U, circumflex accent 
     case "Uuml"     => "Ü" // "&#220;" capital U, dieresis or umlaut mark 
     case "Yacute"   => "Ý" // "&#221;" capital Y, acute accent 
+    case "Yuml"     => "Ÿ"
     case "THORN"    => "Þ" // "&#222;" capital THORN, Icelandic 
     case "szlig"    => "ß" // "&#223;" small sharp s, German (sz ligature) 
     case "agrave"   => "à" // "&#224;" small a, grave accent    
@@ -74,8 +75,8 @@ object EntityMap {
     case "ucirc"    => "û" // "&#251;" small u, circumflex accent 
     case "uuml"     => "ü" // "&#252;" small u, dieresis or umlaut mark 
     case "yacute"   => "ý" // "&#253;" small y, acute accent 
-    case "thorn"    => "þ" // "&#254;" small thorn, Icelandic 
     case "yuml"     => "ÿ" // "&#255;" small y, dieresis or umlaut mark   
+    case "thorn"    => "þ" // "&#254;" small thorn, Icelandic 
     case _          => throw new Exception("Unknown entity : " + entity)
   }
 }

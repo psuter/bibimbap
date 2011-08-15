@@ -1,3 +1,4 @@
+/*
 package bibimbap
 
 package object dblp {
@@ -28,3 +29,4 @@ package object dblp {
     url : String
   )
 }
+*/

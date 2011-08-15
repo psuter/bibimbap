@@ -1,7 +1,12 @@
 package bibimbap
 
 package object data {
-  type SearchResult = Seq[BibTeXEntry]
+  // The idea of the pair of entry, ()=>entry is that in some cases it is
+  // cheaper to get an incomplete version of the entry which is still
+  // sufficient for the purpose of displaying search results. The callback is
+  // used to "precise" the entry once it is examined or imported.
+  type SearchResultEntry = (BibTeXEntry,()=>BibTeXEntry)
+  type SearchResult = Iterable[SearchResultEntry]
 
   object BibTeXEntryTypes extends Enumeration {
     type BibTeXEntryType = Value
@@ -51,7 +56,9 @@ package object data {
     val volume       : Option[String] = None
     val year         : Option[Int]    = None
 
-    override def toString = entryToString(this)
+    override def toString = entryToString(this, entryToKey(this))
+
+    def inlineString = entryToInline(this)
   }
 
   final class InconsistentBibTeXEntry(msg : String) extends Exception(msg)
@@ -151,6 +158,71 @@ package object data {
 
   // Missing : techreport, unpublished
 
+  private def camelcasify(str : String) : String = {
+    val common = Set("", "in", "the", "a", "of", "for")
+    str.split(" ")
+      .map(_.toLowerCase)
+      .filterNot(common(_))
+      .map(_.flatMap(accentRemove(_)))
+      .map(_.capitalize)
+      .mkString("")
+  }
+
+  private def entryToKey(entry : BibTeXEntry) : String = {
+    val persons   = if(!entry.authors.isEmpty) entry.authors else entry.editors
+    val lastnames = persons.map(ss => ss.split(" ").last).mkString("")
+
+    val yr = entry.year match {
+      case Some(y) => {
+        val last = y % 100
+        if(last < 10) "0" + last else last.toString
+      }
+      case None => ""
+    }
+    val title = entry.title match {
+      case Some(t) => camelcasify(t)
+      case None => ""
+    }
+
+    lastnames + yr + title
+  }
+
+  // Tries to shorten the first names (whatever that means).
+  private def shortenName(name : String) : String = {
+    val elements = name.split(" ").filterNot(_.isEmpty)
+    elements.dropRight(1).map(e => e(0) + ".").mkString("") + elements.last
+  }
+
+  private def entryToInline(entry : BibTeXEntry) : String = {
+    val persons = if(!entry.authors.isEmpty) {
+      (if(entry.authors.size > 4) {
+        shortenName(entry.authors.head) + " et al."
+      } else {
+        entry.authors.map(shortenName(_)).mkString(", ")
+      })
+    } else if(!entry.editors.isEmpty) {
+      (if(entry.editors.size > 4) {
+        shortenName(entry.editors.head) + " et al."
+      } else {
+        entry.editors.map(shortenName(_)).mkString(", ")
+      }) + "ed."
+    } else {
+      "?"
+    }
+
+    val title = "\"" + entry.title.getOrElse("?") + "\""
+
+    val where = 
+      entry.booktitle.getOrElse(
+        entry.journal.getOrElse(
+          entry.school.getOrElse(
+            entry.howpublished.getOrElse("?"))))
+
+    val year = entry.year.map(_.toString).getOrElse("?")
+
+    persons + ", " + title + ", " + where + ", " + year
+  }
+
   private def entryToString(entry : BibTeXEntry, key : String = "XXX") : String = {
     val buffer = new StringBuilder
     buffer.append("@" + entry.entryType + "{" + key + ",\n")
@@ -201,5 +273,36 @@ package object data {
     printOptField("note", _.note)
 
     buffer.dropRight(2).append("\n}").toString
+  }
+
+  private def accentRemove(c : Char) : Seq[Char] = c match {
+    case 'À' | 'Á' | 'Â' | 'Ã' => "A"
+    case 'Ä' | 'Æ' => "AE"
+    case 'Å' => "AA"
+    case 'Ç' => "C"
+    case 'È' | 'É' | 'Ê' | 'Ë' => "E"
+    case 'Ì' | 'Í' | 'Î' | 'Ï' => "I"
+    case 'Ð' => "D"
+    case 'Ñ' => "N"
+    case 'Ò' | 'Ó' | 'Ô' | 'Õ' => "O"
+    case 'Ö' | 'Ø' => "OE"
+    case 'Ù' | 'Ú' | 'Û' => "U"
+    case 'Ü' => "UE"
+    case 'Ý' => "Y"
+    case 'Þ' => "T"
+    case 'ß' => "ss"
+    case 'à' | 'á' | 'â' | 'ã' => "a"
+    case 'ä' | 'æ' => "ae"
+    case 'å' => "aa"
+    case 'ç' => "c"
+    case 'è' | 'é' | 'ê' | 'ë' => "e"
+    case 'ì' | 'í' | 'î' | 'ï' => "i"
+    case 'ð' => "d"
+    case 'ñ' => "n"
+    case 'ò' | 'ó' | 'ô' | 'õ' | 'ö' | 'ø' => "o"
+    case 'ù' | 'ú' | 'û' | 'ü' => "u"
+    case 'ý' | 'ÿ' => "y"
+    case 'þ' => "th"
+    case other => other + ""
   }
 }

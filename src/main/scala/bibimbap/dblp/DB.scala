@@ -21,10 +21,10 @@ class Entry (
   val key : String,
   val kind : String,
   val mdate : Date,
-  // val authors : Option[String],
-  // val authorCount : Int,
-  // val editors : Option[String],
-  // val editorCount : Int,
+  val allAuthors : Option[String],
+  val authorCount : Int,
+  val allEditors : Option[String],
+  val editorCount : Int,
   val title : Option[String],
   val booktitle : Option[String],
   val pages : Option[String],
@@ -47,7 +47,7 @@ class Entry (
   ) {
 
   def this() = this(
-    -1L, "error", "error", new Date(), /*Some(""), 0, Some(""), 0,*/ Some(""),
+    -1L, "error", "error", new Date(), Some(""), 0, Some(""), 0, Some(""),
     Some(""), Some(""), Some(0), Some(""), Some(""), Some(""), Some(""),
     Some(""), Some(""), Some(""), Some(""), Some(""), Some(""), Some(""),
     Some(""), Some(""), Some(""), Some(0)
@@ -79,9 +79,11 @@ object DB {
     val entries = table[Entry]
   
     on(entries)(e => declare (
-      e.id is (unique, indexed),
+      e.id is (primaryKey, unique, indexed),
+      e.allAuthors is (dbType("text")),
+      e.allEditors is (dbType("text")),
       e.key is (indexed, dbType("varchar(255)")),
-      e.title is (indexed, dbType("varchar(1023)")),
+      e.title is (dbType("text")),
       e.booktitle is (indexed, dbType("varchar(255)")),
       e.journal is (dbType("varchar(255)")),
       e.url is (dbType("text")),
@@ -95,7 +97,7 @@ object DB {
     val persons = table[Person]
 
     on(persons)(p => declare (
-      p.id is (unique, indexed),
+      p.id is (primaryKey, unique, indexed),
       p.name is (indexed, dbType("varchar(127)"))
     ))
 

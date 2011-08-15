@@ -1,38 +1,33 @@
 package bibimbap
 package dblp
 
+import bibimbap.data._
+
 import org.squeryl.PrimitiveTypeMode._
 
-class Search(settings : Settings) {
+trait Search extends Export {
+  val settings : Settings
+
   private val db = DB(settings, false)
 
-  def search(string : String) : Unit = {
+  def search(string : String) : SearchResult = {
+    import MySQLMatchAgainst._
+
     def results = 
-      from(db.persons)(p => where(p.name like ("%" + string + "%")) select(p))
+      from(db.entries)(e => where(
+        matchAgainst(e.allAuthors, e.allEditors, e.title, e.booktitle)(string) > 0.0f
+        and
+        (e.kind === "inproceedings" or e.kind === "article")
+      ) select(e))
 
-    def joined = join(
-      from(db.persons)(p => where(p.name like ("%" + string + "%")) select(p)),
-      db.authorship,
-      db.entries)((p, as, e) =>
-      select(p, as, e)
-      on(p.id === as.authorId, as.entryId === e.id))
-
-    def results2 =
-      from(joined)(triple => select(triple._1, triple._3))
-
-    println("Names : ")
     inTransaction {
-      for(p <- results.take(5)) {
-        println(p.name + " (" + p.id + ")")
-      }
+      results.take(20).flatMap(export(_))
     }
+  }
 
-    println("")
-    println("Papers authored : ")
+  def fullEntry(dblpkey : String) : Entry = {
     inTransaction {
-      for((p, e) <- results2) {
-        println(p.name + " --> " + e.year + " " + e.title)
-      }
+      from(db.entries)(e => where(e.key === dblpkey) select(e)).head
     }
   }
 }

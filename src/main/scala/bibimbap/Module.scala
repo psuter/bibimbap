@@ -1,5 +1,7 @@
 package bibimbap
 
+import bibimbap.data._
+
 abstract class Module(val settings : Settings) {
   import settings.logger.{info,warn}
 
@@ -10,6 +12,8 @@ abstract class Module(val settings : Settings) {
   def requiredSettings : List[String] = Nil
 
   final def actions : Seq[Action[_]] = helpAction +: moreActions
+
+  def searchAction : Option[Action[SearchResult]] = None
 
   def moreActions : Seq[Action[_]] = Seq.empty
 

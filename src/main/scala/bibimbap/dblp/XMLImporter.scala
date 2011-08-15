@@ -215,10 +215,10 @@ class XMLImporter(file : String, settings : Settings) {
         case _ => println("Skipping element " + (k,v))
       }
 
-      // val finalAuthors = if(authors.isEmpty) None else Some(authors.reverse.mkString(";"))
-      // val finalEditors = if(editors.isEmpty) None else Some(editors.reverse.mkString(";"))
+      val finalAuthors = if(authors.isEmpty) None else Some(authors.reverse.mkString(";"))
+      val finalEditors = if(editors.isEmpty) None else Some(editors.reverse.mkString(";"))
 
-      val entry = new Entry(nextID, key, kind, mdate, title, booktitle, pages, year, address, journal, volume, number, month, url, ee, cdrom, publisher, note, crossref, isbn, series, school, chapter)
+      val entry = new Entry(nextID, key, kind, mdate, finalAuthors, finalAuthors.size, finalEditors, finalEditors.size, title, booktitle, pages, year, address, journal, volume, number, month, url, ee, cdrom, publisher, note, crossref, isbn, series, school, chapter)
       nextID += 1
       
       buffer = entry :: buffer

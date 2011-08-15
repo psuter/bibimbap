@@ -3,16 +3,71 @@ package dblp
 
 import bibimbap.data._
 
-class Export(settings : Settings) {
-  val db = DB(settings, false)
+trait Export {
+  self : Search =>
 
-  def export(entry : Entry) : Option[BibTeXEntry] = entry.kind match {
-    case "inproceedings" => {
-      //val authors = db.persons.
-      // select au.authorId, au.authorOrder, p.id, p.name FROM (SELECT * FROM Authorship where entryId = 49918) as au INNER JOIN Person AS p ON p.id = au.authorId order by authorOrder;
+  import settings.logger.{info,warn}
 
-      None
+  private val PageRegExp = """(\d+)-+(\d+)""".r
+  private def rewritePages(str : Option[String]) : Option[String] = str.map(_ match {
+    case PageRegExp(begin, end) => begin + "--" + end
+    case elze => elze
+  })
+
+  private def rewriteTitle(str : Option[String]) : Option[String] = str.map(str =>
+    if(str.endsWith(".")) {
+      str.dropRight(1)
+    } else {
+      str
     }
+  )
+
+  private def allPersonsToSeq(str : Option[String]) : Seq[String] = str match {
+    case Some(ap) => ap.split(";")
+    case None => Seq.empty
+  }
+
+  def export(entry : Entry) : Option[SearchResultEntry] = {
+    //warn("export called on " + entry.kind)
+    entry.kind match {
+    case "inproceedings" if(
+      entry.allAuthors.isDefined &&
+      entry.title.isDefined &&
+      entry.booktitle.isDefined &&
+      entry.year.isDefined
+    ) => Some((new InProceedings(
+        allPersonsToSeq(entry.allAuthors),
+        rewriteTitle(entry.title).get,
+        entry.booktitle.get,
+        entry.year.get,
+        allPersonsToSeq(entry.allEditors),
+        series = entry.series,
+        pages = rewritePages(entry.pages), 
+        publisher = entry.publisher,
+        address = entry.address,
+        month = entry.month,
+        note = entry.note), ()=>preciseExport(entry.key)))
+
+    case "article" if(
+      entry.allAuthors.isDefined &&
+      entry.title.isDefined &&
+      entry.journal.isDefined && entry.journal.get != "CoRR" &&
+      entry.year.isDefined
+    ) => Some((new Article(
+        allPersonsToSeq(entry.allAuthors),
+        rewriteTitle(entry.title).get,
+        entry.journal.get,
+        entry.year.get,
+        volume = entry.volume,
+        number = entry.number,
+        pages = entry.pages,
+        month = entry.month,
+        note = entry.note), ()=>preciseExport(entry.key)))
+    
     case _ => None
+  }}
+
+  def preciseExport(dblpkey : String) : BibTeXEntry = {
+    export(fullEntry(dblpkey)).get._1
   }
 }
