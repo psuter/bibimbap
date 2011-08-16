@@ -25,26 +25,29 @@ abstract class Module(val settings : Settings) {
 
   private def moduleKW = keyword
 
-  val helpAction = new Action[Unit] {
-    val keyword = "help"
-    def description = "Lists available commands" + (if(moduleKW == "<main>") "." else " for module " + moduleKW + ".")
+  val helpAction = new Action[Unit]("help") {
+    def description = "List available commands" + (if(moduleKW == "<main>") "." else " for module " + moduleKW + ".")
 
     def run(args : String*) : Unit = {
-      if(moduleKW != "<main>") {
-        info("'" + moduleKW + "' : " + name)
-      }
-      if(!actions.isEmpty) {
-        info("Commands")
-        for(a <- actions.sortBy(_.keyword)) {
-          info(" - %-10s".format(a.keyword) + " : " + a.description)
+      if(!args.isEmpty) {
+        warn("help does't take arguments.")
+      } else { 
+        if(moduleKW != "<main>") {
+          info("'" + moduleKW + "' : " + name)
         }
-      }
-      if(!subModules.isEmpty) {
-        info("Modules")
-        for(m <- subModules.sortBy(_.keyword)) {
-          info(" - %-10s".format(m.keyword) + " : " + m.name)
+        if(!actions.isEmpty) {
+          info("Commands")
+          for(a <- actions.sortBy(_.keyword)) {
+            info(" - %-10s".format(a.keyword) + " : " + a.description)
+          }
         }
-      }
+        if(!subModules.isEmpty) {
+          info("Modules")
+          for(m <- subModules.sortBy(_.keyword)) {
+            info(" - %-10s".format(m.keyword) + " : " + m.name)
+          }
+        }
+      } 
     }
   }
 

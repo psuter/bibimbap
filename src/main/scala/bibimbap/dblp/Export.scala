@@ -35,39 +35,45 @@ trait Export {
       entry.title.isDefined &&
       entry.booktitle.isDefined &&
       entry.year.isDefined
-    ) => Some((new InProceedings(
-        allPersonsToSeq(entry.allAuthors),
-        rewriteTitle(entry.title).get,
-        entry.booktitle.get,
-        entry.year.get,
-        allPersonsToSeq(entry.allEditors),
-        series = entry.series,
-        pages = rewritePages(entry.pages), 
-        publisher = entry.publisher,
-        address = entry.address,
-        month = entry.month,
-        note = entry.note), ()=>preciseExport(entry.key)))
+    ) => Some(SearchResultEntry(
+        new InProceedings(
+          allPersonsToSeq(entry.allAuthors),
+          rewriteTitle(entry.title).get,
+          entry.booktitle.get,
+          entry.year.get,
+          allPersonsToSeq(entry.allEditors),
+          series = entry.series,
+          pages = rewritePages(entry.pages), 
+          publisher = entry.publisher,
+          address = entry.address,
+          month = entry.month,
+          note = entry.note),
+        ()=>preciseExport(entry.key),
+        entry.ee))
 
     case "article" if(
       entry.allAuthors.isDefined &&
       entry.title.isDefined &&
       entry.journal.isDefined && entry.journal.get != "CoRR" &&
       entry.year.isDefined
-    ) => Some((new Article(
-        allPersonsToSeq(entry.allAuthors),
-        rewriteTitle(entry.title).get,
-        entry.journal.get,
-        entry.year.get,
-        volume = entry.volume,
-        number = entry.number,
-        pages = entry.pages,
-        month = entry.month,
-        note = entry.note), ()=>preciseExport(entry.key)))
+    ) => Some(SearchResultEntry(
+        new Article(
+          allPersonsToSeq(entry.allAuthors),
+          rewriteTitle(entry.title).get,
+          entry.journal.get,
+          entry.year.get,
+          volume = entry.volume,
+          number = entry.number,
+          pages = rewritePages(entry.pages),
+          month = entry.month,
+          note = entry.note),
+        ()=>preciseExport(entry.key),
+        entry.ee))
     
     case _ => None
   }}
 
   def preciseExport(dblpkey : String) : BibTeXEntry = {
-    export(fullEntry(dblpkey)).get._1
+    export(fullEntry(dblpkey)).get.entry
   }
 }

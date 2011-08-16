@@ -12,8 +12,7 @@ class DBLPModule(settings : Settings) extends Module(settings) with Search {
 
   override def searchAction = Some(realSearchAction)
 
-  val realSearchAction = new Action[SearchResult] {
-    val keyword = "search"
+  val realSearchAction = new Action[SearchResult]("search") {
     val description = "Search for records in DBLP."
 
     def run(args : String*) : SearchResult = {
@@ -21,8 +20,7 @@ class DBLPModule(settings : Settings) extends Module(settings) with Search {
     }
   }
 
-  val importAction = new Action[Unit] {
-    val keyword = "reimport"
+  val importAction = new Action[Unit]("reimport") {
     val description = "Delete all data and reimport from dblp.xml."
 
     def run(args : String*) : Unit = {
@@ -31,8 +29,7 @@ class DBLPModule(settings : Settings) extends Module(settings) with Search {
     }
   }
 
-  val createTablesAction = new Action[Unit] {
-    val keyword = "init"
+  val createTablesAction = new Action[Unit]("init") {
     val description = "Attempt to create the DB schema."
 
     def run(args : String*) : Unit = {

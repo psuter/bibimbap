@@ -23,14 +23,12 @@ seq(ProguardPlugin.proguardSettings :_*)
 proguardDefaultArgs := Seq("-dontwarn")
 
 proguardOptions ++= Seq(
-    keepMain("bibedit.Main"),
-    "-keep class org.eclipse.** { <methods>; <fields>; }", 
-    "-keepclassmembers class org.eclipse.** { <methods>; <fields>; }", 
-    "-dontskipnonpubliclibraryclasses",
-    "-dontskipnonpubliclibraryclassmembers",
-    "-overloadaggressively",
-    "-repackageclasses ''",
-    "-allowaccessmodification"
+    "-dontshrink",
+    "-dontoptimize",
+    "-dontobfuscate",
+    "-dontnote",
+    "-dontwarn",
+    "-ignorewarnings"
 )
 
 makeInJarFilter <<= (makeInJarFilter) {

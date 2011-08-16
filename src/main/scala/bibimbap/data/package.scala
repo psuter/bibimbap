@@ -5,7 +5,7 @@ package object data {
   // cheaper to get an incomplete version of the entry which is still
   // sufficient for the purpose of displaying search results. The callback is
   // used to "precise" the entry once it is examined or imported.
-  type SearchResultEntry = (BibTeXEntry,()=>BibTeXEntry)
+  case class SearchResultEntry(entry : BibTeXEntry, callback : ()=>BibTeXEntry, link : Option[String])
   type SearchResult = Iterable[SearchResultEntry]
 
   object BibTeXEntryTypes extends Enumeration {
@@ -158,19 +158,22 @@ package object data {
 
   // Missing : techreport, unpublished
 
-  private def camelcasify(str : String) : String = {
-    val common = Set("", "in", "the", "a", "of", "for")
+  private def camelcasify(str : String) : Seq[String] = {
+    val common = Set("", "in", "the", "a", "of", "for", "and", "or")
     str.split(" ")
       .map(_.toLowerCase)
       .filterNot(common(_))
       .map(_.flatMap(accentRemove(_)))
       .map(_.capitalize)
-      .mkString("")
   }
 
   private def entryToKey(entry : BibTeXEntry) : String = {
     val persons   = if(!entry.authors.isEmpty) entry.authors else entry.editors
-    val lastnames = persons.map(ss => ss.split(" ").last).mkString("")
+    val lastnames = if(persons.size > 3) {
+      persons(0).split(" ").last.flatMap(accentRemove(_)) + "ETAL"
+    } else {
+      persons.map(ss => ss.split(" ").last).mkString("").flatMap(accentRemove(_))
+    }
 
     val yr = entry.year match {
       case Some(y) => {
@@ -180,7 +183,7 @@ package object data {
       case None => ""
     }
     val title = entry.title match {
-      case Some(t) => camelcasify(t)
+      case Some(t) => camelcasify(t).take(6).mkString("").flatMap(accentRemove(_))
       case None => ""
     }
 
@@ -289,7 +292,7 @@ package object data {
     case 'Ù' | 'Ú' | 'Û' => "U"
     case 'Ü' => "UE"
     case 'Ý' => "Y"
-    case 'Þ' => "T"
+    case 'Þ' => "TH"
     case 'ß' => "ss"
     case 'à' | 'á' | 'â' | 'ã' => "a"
     case 'ä' | 'æ' => "ae"
@@ -299,10 +302,13 @@ package object data {
     case 'ì' | 'í' | 'î' | 'ï' => "i"
     case 'ð' => "d"
     case 'ñ' => "n"
-    case 'ò' | 'ó' | 'ô' | 'õ' | 'ö' | 'ø' => "o"
-    case 'ù' | 'ú' | 'û' | 'ü' => "u"
+    case 'ò' | 'ó' | 'ô' | 'õ' => "o"
+    case 'ö' | 'ø' => "oe"
+    case 'ù' | 'ú' | 'û' => "u"
+    case 'ü' => "ue"
     case 'ý' | 'ÿ' => "y"
     case 'þ' => "th"
-    case other => other + ""
+    case validLetter if validLetter >= 'A' && validLetter <= 'z' => Seq(validLetter)
+    case other => ""
   }
 }
