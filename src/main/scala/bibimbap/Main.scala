@@ -7,7 +7,7 @@ import jline._
 import scala.collection.mutable.{Map=>MutableMap}
 import scala.sys.process._
 
-import java.io.File
+import java.io.{File,FileWriter}
 
 object Main {
   private val homeDir = System.getProperty("user.home") + System.getProperty("file.separator")
@@ -18,8 +18,16 @@ object Main {
 
   private val replID = "bibimbap> "
 
+  private var managedFileName = "managed.bib"
+
   def main(args : Array[String]) : Unit = {
+    sayHello
     val settings = (new ConfigFileParser(configFileName)).parse.getOrElse(DefaultSettings)
+
+    settings.get("general", "bib.filename") match {
+      case Some(fn) => managedFileName = fn
+      case _ => ;
+    }
 
     val theMainModule = mainModule(settings)
     
@@ -127,6 +135,17 @@ object Main {
             }
           }
         }
+      },
+
+      new SearchResultAction("import") {
+        val description = "Imports a search result into the managed BibTeX file."
+
+        def run(sre : SearchResultEntry) {
+          val fw = new FileWriter(new File(managedFileName), true)
+          fw.write(sre.entry.toString)
+          fw.write("\n\n")
+          fw.close
+        }
       }
     )
 
@@ -135,6 +154,16 @@ object Main {
     )
 
     
+  }
+
+  private def sayHello {
+    println("""         __    _ __    _           __                     """)
+    println("""   ———  / /_  (_) /_  (_)___ ___  / /_  ____ _____  ——————""")
+    println("""  ———  / __ \/ / __ \/ / __ `__ \/ __ \/ __ `/ __ \  ———— """)
+    println(""" ———  / /_/ / / /_/ / / / / / / / /_/ / /_/ / /_/ /  ———  """)
+    println("""———  /_.___/_/_.___/_/_/ /_/ /_/_.___/\__,_/ .___/  ———   """)
+    println("""                                          /_/             """)
+    println("")
   }
 }
 
