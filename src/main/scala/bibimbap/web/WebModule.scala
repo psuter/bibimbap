@@ -23,8 +23,6 @@ class WebModule(settings : Settings) extends Module(settings) {
       val pattern_enc = java.net.URLEncoder.encode(pattern, "UTF-8");
       val str = httpRequestToString(String.format(url, pattern_enc))
 
-        println("Got: "+str);
-
       findJsonURLs(str) flatMap extractFromUrl _
     }
   }
