@@ -23,6 +23,8 @@ class WebModule(settings : Settings) extends Module(settings) {
       val pattern_enc = java.net.URLEncoder.encode(pattern, "UTF-8");
       val str = httpRequestToString(String.format(url, pattern_enc))
 
+        println("Got: "+str);
+
       findJsonURLs(str) flatMap extractFromUrl _
     }
   }
@@ -30,23 +32,30 @@ class WebModule(settings : Settings) extends Module(settings) {
   def findJsonURLs(str: String): List[String] = {
       import scala.util.parsing.json._
 
-      val results = JSON.parseFull(str).get.asInstanceOf[Map[String, Any]]("result")
-                                           .asInstanceOf[Map[String, Any]]("hits")
-                                           .asInstanceOf[Map[String, List[Map[String, Any]]]]("hit")
+      JSON.parseFull(str) match {
+        case Some(data) =>
+          val results = data.asInstanceOf[Map[String, Any]]("result")
+                            .asInstanceOf[Map[String, Any]]("hits")
+                            .asInstanceOf[Map[String, List[Map[String, Any]]]]("hit");
 
-      val res = for (res <- results) yield {
-        try {
-          val url = res("url").asInstanceOf[String]
 
-          Some(url)
-        } catch {
-          case _ =>
-            settings.logger.warn("Unable to handle: "+res)
-            None
-        }
+          val res = for (res <- results) yield {
+            try {
+              val url = res("url").asInstanceOf[String]
+
+              Some(url)
+            } catch {
+              case _ =>
+                settings.logger.warn("Unable to handle: "+res)
+                None
+            }
+          }
+
+          res.flatten
+      case _ =>
+
+        Nil
       }
-
-      res.flatten
   }
 
   val reBlock = """(?s)<pre>@(.+?)\{.+?>:([^,]+),(.+?)</pre>""".r

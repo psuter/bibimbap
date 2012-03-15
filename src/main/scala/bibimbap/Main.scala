@@ -145,6 +145,8 @@ object Main {
           fw.write(sre.entry.toString)
           fw.write("\n\n")
           fw.close
+
+          settings.logger.info("Imported: \\cite{"+sre.entry.getKey+"}")
         }
       }
     )
