@@ -19,3 +19,8 @@ libraryDependencies ++= Seq(
   "commons-logging" % "commons-logging" % "1.1.1"
 )
 
+seq(ProguardPlugin.proguardSettings :_*)
+
+proguardOptions += keepMain("bibimbap.Main")
+
+proguardOptions += "-keep class org.apache.commons.** { *; }"
