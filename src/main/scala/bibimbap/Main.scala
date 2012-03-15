@@ -150,7 +150,8 @@ object Main {
     )
 
     override val subModules = List(
-      new dblp.DBLPModule(settings)
+//      new dblp.DBLPModule(settings),
+      new web.WebModule(settings)
     )
 
     
