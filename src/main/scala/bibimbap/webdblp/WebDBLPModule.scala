@@ -12,6 +12,8 @@ class WebDBLPModule(settings : Settings) extends Module(settings) {
 
   override def searchAction = Some(webSearchAction)
 
+  override val moreActions = Seq(webSearchAction)
+
   val webSearchAction = new Action[SearchResult]("search") {
     val description = "Search for records on DBLP."
 
@@ -27,40 +29,38 @@ class WebDBLPModule(settings : Settings) extends Module(settings) {
     }
   }
 
-  def findJsonURLs(str: String): List[String] = {
-      import scala.util.parsing.json._
+  private def findJsonURLs(str: String): List[String] = {
+    import scala.util.parsing.json._
 
-      JSON.parseFull(str) match {
-        case Some(data) =>
-          val results = data.asInstanceOf[Map[String, Any]]("result")
-                            .asInstanceOf[Map[String, Any]]("hits")
-                            .asInstanceOf[Map[String, List[Map[String, Any]]]]("hit");
+    JSON.parseFull(str) match {
+      case Some(data) => {
+        // TODO surround with try-catch for better misformating handling...
+        val results = data.asInstanceOf[Map[String, Any]]("result")
+                          .asInstanceOf[Map[String, Any]]("hits")
+                          .asInstanceOf[Map[String, List[Map[String, Any]]]]("hit");
 
+        val res = for (res <- results) yield {
+          try {
+            val url = res("url").asInstanceOf[String]
 
-          val res = for (res <- results) yield {
-            try {
-              val url = res("url").asInstanceOf[String]
-
-              Some(url)
-            } catch {
-              case _ =>
-                settings.logger.warn("Unable to handle: "+res)
-                None
-            }
+            Some(url)
+          } catch {
+            case _ =>
+              settings.logger.warn("Unable to handle: "+res)
+              None
           }
-
-          res.flatten
-      case _ =>
-
-        Nil
+        }
+        res.flatten
       }
+      case _ => Nil
+    }
   }
 
-  val reBlock = """(?s)<pre>@(.+?)\{.+?>:([^,]+),(.+?)</pre>""".r
-  val reParts = """(?s)\s+([a-z]+)\s+=\s+\{(.+?)\}(,|\s+\})""".r
-  val reWS    = """\s+""".r
+  private val reBlock = """(?s)<pre>@(.+?)\{.+?>:([^,]+),(.+?)</pre>""".r
+  private val reParts = """(?s)\s+([a-z]+)\s+=\s+\{(.+?)\}(,|\s+\})""".r
+  private val reWS    = """\s+""".r
 
-  def extractFromUrl(url: String): Option[SearchResultEntry] = {
+  private def extractFromUrl(url: String): Option[SearchResultEntry] = {
     val str = httpRequestToString(url)
 
     var fullData = Map[String, String]()
@@ -88,7 +88,7 @@ class WebDBLPModule(settings : Settings) extends Module(settings) {
     }
 
     val optEntry = fullData("type") match {
-      case "inproceedings" =>
+      case "inproceedings" => {
         Some(new InProceedings(
           fullData.get("author").map(s => s.split(" and ").toSeq).getOrElse(Nil),
           fullData.getOrElse("title", "N/A"),
@@ -104,8 +104,8 @@ class WebDBLPModule(settings : Settings) extends Module(settings) {
           fullData.get("note"),
           fullData.get("key")
           ))
-
-      case "article" =>
+      }
+      case "article" => {
         Some(new Article(
           fullData.get("author").map(s => s.split(" and ").toSeq).getOrElse(Nil),
           fullData.getOrElse("title", "N/A"),
@@ -118,8 +118,8 @@ class WebDBLPModule(settings : Settings) extends Module(settings) {
           fullData.get("note"),
           fullData.get("key")
           ))
-      case _ =>
-        None
+      }
+      case _ => None
     }
 
     optEntry match {
@@ -131,16 +131,16 @@ class WebDBLPModule(settings : Settings) extends Module(settings) {
   }
 
 
-  def httpRequestToString(url: String): String = {
+  private def httpRequestToString(url: String): String = {
     val res = httpRequest(url)
 
     IOUtils.toString(res, "UTF-8");
   }
 
 
-  def httpRequest(url: String): java.io.InputStream  = httpRequest(url, 1);
+  private def httpRequest(url: String): java.io.InputStream  = httpRequest(url, 1);
 
-  def httpRequest(url: String, timeout: Int): java.io.InputStream = {
+  private def httpRequest(url: String, timeout: Int): java.io.InputStream = {
     val client = new HttpClient()
     val method = new GetMethod(url)
 
@@ -152,6 +152,4 @@ class WebDBLPModule(settings : Settings) extends Module(settings) {
 
     method.getResponseBodyAsStream()
   }
-
-  override val moreActions = Seq(webSearchAction)
 }
