@@ -145,12 +145,15 @@ object Main {
           fw.write(sre.entry.toString)
           fw.write("\n\n")
           fw.close
+
+          settings.logger.info("Imported: \\cite{"+sre.entry.getKey+"}")
         }
       }
     )
 
     override val subModules = List(
-      new dblp.DBLPModule(settings)
+//      new dblp.DBLPModule(settings),
+      new web.WebModule(settings)
     )
 
     

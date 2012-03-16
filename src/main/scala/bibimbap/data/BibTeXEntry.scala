@@ -51,6 +51,8 @@ trait BibTeXEntry {
 
   override def toString = entryToString(this, entryToKey(this))
 
+  def getKey = entryToKey(this)
+
   def inlineString = entryToInline(this)
 }
 

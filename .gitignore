@@ -3,5 +3,6 @@
 *.swo
 
 # (x)sbt
-project
+project/project
+project/target
 target
