@@ -124,7 +124,7 @@ class WebDBLPModule(settings : Settings) extends Module(settings) {
 
     optEntry match {
       case Some(e) =>
-        Some(new SearchResultEntry(e, () => e, Some(fullData("ee"))))
+        Some(new SearchResultEntry(e, () => e, fullData.get("ee")))
       case None =>
         None
     }
