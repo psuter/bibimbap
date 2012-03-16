@@ -1,14 +1,14 @@
 package bibimbap
-package web
+package webdblp
 
 import bibimbap.data._
 import org.apache.commons.httpclient._, methods._, params._, cookie._
 import org.apache.commons.io.IOUtils
 
-class WebModule(settings : Settings) extends Module(settings) {
+class WebDBLPModule(settings : Settings) extends Module(settings) {
   val name = "Web DBLP access"
 
-  val keyword = "web"
+  val keyword = "webdblp"
 
   override def searchAction = Some(webSearchAction)
 
