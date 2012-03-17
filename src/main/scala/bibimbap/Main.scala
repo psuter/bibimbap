@@ -41,7 +41,7 @@ object Main {
 
     var line : String = null
     while(true) {
-      line = reader.readLine(replID)
+      line = reader.readLine(replID, 0.toChar)
       if(line == null) {
         sys.exit(0)
       }
