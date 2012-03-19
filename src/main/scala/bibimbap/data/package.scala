@@ -20,13 +20,13 @@ package object data {
   // Produces an equivalent string that is valid LaTeX (in theory)
   private[data] def strToLaTeX(str : String) : String = latexify(str)
 
+  private val commonWords = Set("", "in", "the", "a", "an", "of", "for", "and", "or", "by", "on", "with")
   private def camelcasify(str : String) : Seq[String] = {
-    val common = Set("", "in", "the", "a", "of", "for", "and", "or")
     str.split(" ")
       .map(strToASCII)
       .filterNot(_.isEmpty)
       .map(_.toLowerCase)
-      .filterNot(common)
+      .filterNot(commonWords)
       .map(_.capitalize)
   }
 
