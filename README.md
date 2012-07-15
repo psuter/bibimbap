@@ -36,4 +36,5 @@ When properly configured, here is how a session can look like:
     
     bibimbap> import 3
 
-...and that famous BDD paper is now imported in `managed.bib`.
+...and that famous BDD paper is now imported in `managed.bib`. Moreoever, the
+corresponding key is copied to the system clipboard.
