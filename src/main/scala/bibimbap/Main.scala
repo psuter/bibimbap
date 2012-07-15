@@ -146,6 +146,12 @@ object Main {
           fw.write("\n\n")
           fw.close
 
+          import java.awt.Toolkit
+          import java.awt.datatransfer.StringSelection
+          val clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
+          val stringSel = new StringSelection(sre.entry.getKey)
+          clipboard.setContents(stringSel, stringSel)
+
           settings.logger.info("Imported: \\cite{"+sre.entry.getKey+"}")
         }
       }
