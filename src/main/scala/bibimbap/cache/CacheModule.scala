@@ -1,5 +1,5 @@
 package bibimbap
-package lucene
+package cache
 
 import bibimbap.data._
 
@@ -19,12 +19,12 @@ import org.apache.lucene.store.Directory
 import org.apache.lucene.store.RAMDirectory
 import org.apache.lucene.util.Version
 
-class LuceneModule(settings : Settings) extends SearchModule(settings) {
+class CacheModule(settings : Settings) extends SearchModule(settings) {
   module =>
 
   val name = "Local cache based on Lucene"
 
-  val keyword = "lucene"
+  val keyword = "cache"
 
   val dataSourceName = "Local Cache"
 

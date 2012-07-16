@@ -170,7 +170,7 @@ object Main {
     )
 
     override val subModules = List(
-      new lucene.LuceneModule(settings),
+      new cache.CacheModule(settings),
       new dblp.DBLPModule(settings)
     )
   }
