@@ -17,3 +17,5 @@ libraryDependencies += "com.codahale" %% "jerkson" % "0.5.0"
 seq(ProguardPlugin.proguardSettings :_*)
 
 proguardOptions += keepMain("bibimbap.Main")
+
+proguardOptions += "-keep class org.codehaus.** { *; }"
