@@ -160,8 +160,6 @@ object Main {
     override val subModules = List(
       new dblp.DBLPModule(settings)
     )
-
-    
   }
 
   private def sayHello {

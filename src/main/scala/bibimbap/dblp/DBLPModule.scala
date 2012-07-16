@@ -149,7 +149,7 @@ class DBLPModule(settings : Settings) extends Module(settings) {
           }
 
           case JString(other) => {
-            info("Other type : \"" + other + "\"")
+            // info("Other type : \"" + other + "\"")
             None
           }
 
