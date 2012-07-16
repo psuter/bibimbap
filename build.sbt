@@ -8,11 +8,13 @@ scalacOptions += "-deprecation"
 
 scalacOptions += "-unchecked"
 
+libraryDependencies += "jline" % "jline" % "0.9.94"
+
+resolvers += "repo.codahale.com" at "http://repo.codahale.com"
+
+libraryDependencies += "com.codahale" %% "jerkson" % "0.5.0"
+
 libraryDependencies ++= Seq(
-  "jline" % "jline" % "0.9.94",
-  "org.squeryl" %% "squeryl" % "0.9.5-RC1",
-  "com.h2database" % "h2" % "1.2.127",
-  "mysql" % "mysql-connector-java" % "5.1.15",
   "commons-codec" % "commons-codec" % "1.3",
   "commons-httpclient" % "commons-httpclient" % "3.1",
   "commons-io" % "commons-io" % "2.1",
