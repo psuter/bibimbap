@@ -5,23 +5,23 @@ import bibimbap.data._
 abstract class Module(val settings : Settings) {
   import settings.logger.{info,warn}
 
+  // Basic
   val name : String
-
   val keyword : String
 
   def requiredSettings : List[String] = Nil
 
+  // Actions
+  def moreActions : Seq[Action[_]] = Seq.empty
   final def actions : Seq[Action[_]] = helpAction +: moreActions
 
-  def searchAction : Option[Action[SearchResult]] = None
-
-  def moreActions : Seq[Action[_]] = Seq.empty
-
+  // Submodules
   def subModules : Seq[Module] = Seq.empty
 
-  def help : Unit = helpAction.run()
+  // Callbacks
+  def onImport(sre : SearchResultEntry) : Unit = ()
 
-  lazy val allSubKeywords : Seq[String] = (actions.map(_.keyword) ++ subModules.map(_.keyword)).sorted
+  final lazy val allSubKeywords : Seq[String] = (actions.map(_.keyword) ++ subModules.map(_.keyword)).sorted
 
   private def moduleKW = keyword
 
@@ -51,7 +51,7 @@ abstract class Module(val settings : Settings) {
     }
   }
 
-  def executeLine(line : String) : Unit = if(line != null) {
+  final def executeLine(line : String) : Unit = if(line != null) {
     val trimmed = line.trim
     if(trimmed != "") {
       val words = line.trim.split(' ').filterNot(_.isEmpty)
@@ -59,7 +59,7 @@ abstract class Module(val settings : Settings) {
     }
   }
 
-  def execute(words : String*) : Unit = {
+  final def execute(words : String*) : Unit = {
     if(words.isEmpty) {
 
     } else {
@@ -71,7 +71,7 @@ abstract class Module(val settings : Settings) {
         case None => subModules.find(_.keyword == first) match {
           case Some(m) => {
             if(rest.isEmpty) {
-              m.help
+              m.helpAction.run()
             } else {
               m.execute(rest : _*)
             }

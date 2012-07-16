@@ -5,7 +5,7 @@ package object data {
   // cheaper to get an incomplete version of the entry which is still
   // sufficient for the purpose of displaying search results. The callback is
   // used to "precise" the entry once it is examined or imported.
-  case class SearchResultEntry(entry : BibTeXEntry, callback : ()=>BibTeXEntry, link : Option[String])
+  case class SearchResultEntry(entry : BibTeXEntry, callback : ()=>BibTeXEntry, link : Option[String], source : String)
   type SearchResult = Iterable[SearchResultEntry]
 
   private[data] def forConsistency(msg : String)(expr : =>Boolean)(implicit entryType : BibTeXEntryTypes.BibTeXEntryType) {

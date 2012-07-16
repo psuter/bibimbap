@@ -14,21 +14,24 @@ import com.codahale.jerkson.Json
 import com.codahale.jerkson.ParsingException
 import com.codahale.jerkson.AST._
 
-class DBLPModule(settings : Settings) extends Module(settings) {
+class DBLPModule(settings : Settings) extends SearchModule(settings) {
+  module =>
+
   val name = "Remote DBLP access"
 
-  val keyword = "remotedblp"
+  val keyword = "dblp"
+
+  val dataSourceName = "DBLP"
+
+  override val moreActions  = Seq(searchAction)
 
   private val info : Any=>Unit = settings.logger.info
   private val warn : Any=>Unit = settings.logger.warn
 
-  override val searchAction = Some(searchActionImpl)
-  override val moreActions  = Seq(searchActionImpl)
-
   private val searchURLPrefix  = "http://www.dblp.org/search/api/?q="
   private val searchURLPostfix = "&h=10&c=4&f=0&format=json"
 
-  private lazy val searchActionImpl = new Action[SearchResult]("search") {
+  lazy val searchAction = new Action[SearchResult]("search") {
     val description = "Search for records on DBLP (remotely)."
 
     def run(args : String*) : SearchResult = {
@@ -123,7 +126,7 @@ class DBLPModule(settings : Settings) extends Module(settings) {
               yr2yr(venueYear).getOrElse(year.getOrElse(0)),
               pages = pages
             )
-            Some(SearchResultEntry(entry, () => entry, link))
+            Some(SearchResultEntry(entry, () => entry, link, module.keyword))
           }
 
           case JString("article") => {
@@ -145,7 +148,7 @@ class DBLPModule(settings : Settings) extends Module(settings) {
               number = num,
               pages = pgs
             )
-            Some(SearchResultEntry(entry, () => entry, link))
+            Some(SearchResultEntry(entry, () => entry, link, module.keyword))
           }
 
           case JString(other) => {

@@ -10,6 +10,8 @@ scalacOptions += "-unchecked"
 
 libraryDependencies += "jline" % "jline" % "0.9.94"
 
+libraryDependencies += "org.apache.lucene" % "lucene-core" % "3.6.0"
+
 resolvers += "repo.codahale.com" at "http://repo.codahale.com"
 
 libraryDependencies += "com.codahale" %% "jerkson" % "0.5.0"

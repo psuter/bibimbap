@@ -20,7 +20,7 @@ object BibTeXEntryTypes extends Enumeration {
 
 // This datatypes and all the following ones assume crossrefs have been
 // "resolved" into all entries.
-trait BibTeXEntry {
+trait BibTeXEntry extends Serializable {
   val entryType : BibTeXEntryTypes.BibTeXEntryType
 
   val address      : Option[String] = None
@@ -54,6 +54,28 @@ trait BibTeXEntry {
   def getKey = entryToKey(this)
 
   def inlineString = entryToInline(this)
+
+  final def serialized = BibTeXEntry.serialize(this)
+}
+
+object BibTeXEntry {
+  def serialize(entry : BibTeXEntry) : Array[Byte] = {
+    import java.io.{ByteArrayOutputStream,ObjectOutputStream}
+    val baos = new ByteArrayOutputStream(1024)
+    val oos  = new ObjectOutputStream(baos)
+    oos.writeObject(entry)
+    baos.toByteArray
+  }
+
+  def deserialize(bytes : Array[Byte]) : Option[BibTeXEntry] = {
+    import java.io.{ByteArrayInputStream,ObjectInputStream}
+    val bais = new ByteArrayInputStream(bytes)
+    val ois  = new ObjectInputStream(bais)
+    ois.readObject() match {
+      case be : BibTeXEntry => Some(be)
+      case _ => None
+    } 
+  }
 }
 
 final class InconsistentBibTeXEntry(msg : String) extends Exception(msg)

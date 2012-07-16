@@ -95,11 +95,19 @@ object Main {
         def run(args : String*) : Unit = {
           searchHistory.clear
 
-          for(sm <- subModules; sa <- sm.searchAction) {
-            for((searchResultEntry, i) <- sa.run(args : _*).take(10).zipWithIndex) {
-              val SearchResultEntry(entry, _, _) = searchResultEntry
-              info("[" + i + "] " + entry.inlineString)
+          var i = 0
+          for(sm <- subModules collect { case srm : SearchModule => srm }) {
+            var first = true
+            for(searchResultEntry <- sm.searchAction.run(args : _*).take(10)) {
+              if(first) {
+                info("[" + sm.dataSourceName + "]")
+                first = false
+              }
+              val SearchResultEntry(entry, _, _, src) = searchResultEntry
+              val spc = if(i < 10) " " else ""
+              info(spc + "[" + i + "] " + entry.inlineString)
               searchHistory(i) = searchResultEntry
+              i += 1
             }
           }
         }
@@ -153,11 +161,16 @@ object Main {
           clipboard.setContents(stringSel, stringSel)
 
           settings.logger.info("Imported: \\cite{"+sre.entry.getKey+"}")
+
+          for(sub <- subModules) {
+            sub.onImport(sre)
+          }
         }
       }
     )
 
     override val subModules = List(
+      new lucene.LuceneModule(settings),
       new dblp.DBLPModule(settings)
     )
   }
