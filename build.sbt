@@ -1,3 +1,7 @@
+import AssemblyKeys._
+
+assemblySettings
+
 name := "bibimbap"
 
 version := "0.1"
@@ -12,12 +16,8 @@ libraryDependencies += "jline" % "jline" % "0.9.94"
 
 libraryDependencies += "org.apache.lucene" % "lucene-core" % "3.6.0"
 
+libraryDependencies += "commons-io" % "commons-io" % "2.4"
+
 resolvers += "repo.codahale.com" at "http://repo.codahale.com"
 
 libraryDependencies += "com.codahale" %% "jerkson" % "0.5.0"
-
-seq(ProguardPlugin.proguardSettings :_*)
-
-proguardOptions += keepMain("bibimbap.Main")
-
-proguardOptions += "-keep class org.codehaus.** { *; }"
