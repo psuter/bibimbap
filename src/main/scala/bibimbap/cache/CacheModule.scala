@@ -3,20 +3,14 @@ package cache
 
 import bibimbap.data._
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer
-import org.apache.lucene.document.Document
-import org.apache.lucene.document.Field
-import org.apache.lucene.index.IndexReader
-import org.apache.lucene.index.IndexWriter
-import org.apache.lucene.index.IndexWriterConfig
-import org.apache.lucene.queryParser.ParseException
-import org.apache.lucene.queryParser.QueryParser
-import org.apache.lucene.search.IndexSearcher
-import org.apache.lucene.search.Query
-import org.apache.lucene.search.ScoreDoc
-import org.apache.lucene.search.TopScoreDocCollector
-import org.apache.lucene.store.Directory
-import org.apache.lucene.store.RAMDirectory
+import java.io.File
+
+import org.apache.lucene.analysis.standard._
+import org.apache.lucene.document._
+import org.apache.lucene.index._
+import org.apache.lucene.queryParser._
+import org.apache.lucene.search._
+import org.apache.lucene.store._
 import org.apache.lucene.util.Version
 
 class CacheModule(settings : Settings) extends SearchModule(settings) {
@@ -28,16 +22,25 @@ class CacheModule(settings : Settings) extends SearchModule(settings) {
 
   val dataSourceName = "Local Cache"
 
-  override val moreActions  = Seq(searchAction)
+  override val moreActions  = Seq(searchAction, clearAction)
 
   private val info : Any=>Unit = settings.logger.info
   private val warn : Any=>Unit = settings.logger.warn
 
+  private val cacheDir = new File(settings("general", "dir.cache"))
+
   private val analyzer = new StandardAnalyzer(Version.LUCENE_36)
-  private val index    = new RAMDirectory()
-  private val config   = new IndexWriterConfig(Version.LUCENE_36, analyzer)
-  private val writer   = new IndexWriter(index, config)
-  writer.commit()
+
+  private var index = initializeIndex()
+
+  def initializeIndex() = {
+    val idx = FSDirectory.open(cacheDir)
+    // This should force the creation of the index if it didn't exist.
+    val cfg = new IndexWriterConfig(Version.LUCENE_36, analyzer)
+    val w = new IndexWriter(idx, cfg)
+    w.close()
+    idx
+  }
 
   override def onImport(sre : SearchResultEntry) {
     if(sre.source != module.keyword)
@@ -88,8 +91,10 @@ class CacheModule(settings : Settings) extends SearchModule(settings) {
     val bytes : Array[Byte] = entry.serialized
     doc.add(new Field("serialized", bytes))
 
+    val config = new IndexWriterConfig(Version.LUCENE_36, analyzer)
+    val writer = new IndexWriter(index, config)
     writer.addDocument(doc)
-    writer.commit()
+    writer.close()
   }
 
   private def documentToSearchResultEntry(document : Document) : Option[SearchResultEntry] = {
@@ -111,5 +116,20 @@ class CacheModule(settings : Settings) extends SearchModule(settings) {
         searchEntries(query).flatMap(documentToSearchResultEntry)
       }
     }
+  }
+
+  lazy val clearAction = new Action[Unit]("clear") {
+    val description = "Clear the local cache."
+
+    def run(args : String*) : Unit = {
+      import org.apache.commons.io.FileUtils
+      import java.io.IOException
+      try {
+        FileUtils.deleteDirectory(cacheDir)
+        index = initializeIndex()
+      } catch {
+        case ioe : IOException => warn(ioe.getLocalizedMessage)
+      }
+    } 
   }
 }

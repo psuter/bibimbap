@@ -13,21 +13,14 @@ object Main {
   private val homeDir = System.getProperty("user.home") + System.getProperty("file.separator")
 
   private val configFileName = homeDir + ".bibimbapconfig"
-
   private val historyFileName = homeDir + ".bibimbaphistory"
 
   private val replID = "bibimbap> "
 
-  private var managedFileName = "managed.bib"
 
   def main(args : Array[String]) : Unit = {
     sayHello
     val settings = (new ConfigFileParser(configFileName)).parse.getOrElse(DefaultSettings)
-
-    settings.get("general", "bib.filename") match {
-      case Some(fn) => managedFileName = fn
-      case _ => ;
-    }
 
     val theMainModule = mainModule(settings)
     
@@ -149,7 +142,8 @@ object Main {
         val description = "Imports a search result into the managed BibTeX file."
 
         def run(sre : SearchResultEntry) {
-          val fw = new FileWriter(new File(managedFileName), true)
+          val fn = settings("general", "bib.filename")
+          val fw = new FileWriter(new File(fn), true)
           fw.write(sre.entry.toString)
           fw.write("\n\n")
           fw.close

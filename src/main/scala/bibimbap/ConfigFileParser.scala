@@ -43,7 +43,12 @@ class ConfigFileParser(filename : String) {
 
       Some(new Settings {
         val logger = DefaultSettings.logger
-        override def get(moduleName : String, key : String) : Option[String] = sets.get((moduleName, key)) 
+        override def get(moduleName : String, key : String) : Option[String] = {
+          sets.get((moduleName, key)) match {
+            case s @ Some(_) => s
+            case None => DefaultSettings.get(moduleName, key)
+          }
+        }
       })
     } catch {
       case anything => warn(anything.getMessage); None

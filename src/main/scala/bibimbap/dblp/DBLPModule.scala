@@ -9,6 +9,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.net.ConnectException
 import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 import com.codahale.jerkson.Json
 import com.codahale.jerkson.ParsingException
@@ -52,6 +53,10 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
         }
         case ste : SocketTimeoutException => {
           warn("Network error: " + ste.getLocalizedMessage)
+          Nil
+        }
+        case uhe : UnknownHostException => {
+          warn("Network error (unknown host): " + uhe.getLocalizedMessage)
           Nil
         }
       }
