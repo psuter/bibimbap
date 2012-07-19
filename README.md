@@ -44,6 +44,6 @@ Running
 
 The simplest way of running bibimbap is to generate a single jar file that includes all dependencies. You can obtain one by running
 
-  $ sbt assembly
+    $ sbt assembly
 
 The result will be in `target/bibimbap-assembly-???.jar`. You can run it using `java -jar ...`.
