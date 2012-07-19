@@ -39,6 +39,7 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
       try {
         val pattern = URLEncoder.encode(args.mkString(" "), "UTF-8")
         val url = new URL(searchURLPrefix + pattern + searchURLPostfix)
+        // info("DBLP query URL : [" + url + "].")
         val urlCon = url.openConnection()
         urlCon.setConnectTimeout(3000)
         urlCon.setReadTimeout(3000)
@@ -67,6 +68,7 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
     try {
       (Json.parse[JValue](text) \\ "hit").flatMap(hit => hit match {
         case JArray(elems) => elems
+        case single : JObject => Seq(single)
         case _ => Nil
       })
     } catch {
