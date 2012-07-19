@@ -1,3 +1,5 @@
+// This class may become useful again if we ever have a "fromHTML" method for MStrings
+/*
 package bibimbap
 package dblp
 
@@ -80,3 +82,4 @@ object EntityMap {
     case _          => throw new Exception("Unknown entity : " + entity)
   }
 }
+*/

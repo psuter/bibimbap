@@ -1,5 +1,7 @@
 package bibimbap
 
+import strings._
+
 package object data {
   // The idea of the pair of entry, ()=>entry is that in some cases it is
   // cheaper to get an incomplete version of the entry which is still
@@ -14,28 +16,33 @@ package object data {
     }
   }
 
-  // Approximates the string with a version that matches [a-zA-Z]*.
-  private[data] def strToASCII(str : String) : String = str.flatMap(accentRemove)
-
-  // Produces an equivalent string that is valid LaTeX (in theory)
-  private[data] def strToLaTeX(str : String) : String = latexify(str)
-
   private val commonWords = Set("", "in", "the", "a", "an", "of", "for", "and", "or", "by", "on", "with")
-  private def camelcasify(str : String) : Seq[String] = {
-    str.split(" ")
-      .map(strToASCII)
-      .filterNot(_.isEmpty)
-      .map(_.toLowerCase)
-      .filterNot(commonWords)
-      .map(_.capitalize)
-  }
-
   private[data] def entryToKey(entry : BibTeXEntry) : String = {
+    def isBibTeXFriendly(c : Char) : Boolean = (
+      (c >= 'A' && c <= 'Z') ||
+      (c >= 'a') && (c <= 'z') ||
+      (c >= '0') && (c <= '9')
+    )
+
+    def camelcasify(str : MString) : Seq[String] = {
+      str.toJava.split(" ")
+        .map(bit => MString.javaToASCII(bit).filter(isBibTeXFriendly))
+        .filterNot(_.isEmpty)
+        .map(_.toLowerCase)
+        .filterNot(commonWords)
+        .map(_.capitalize)
+    }
+
+    def lastFromPerson(person : MString) : String = {
+      val lastBit = MString.fromJava(person.toJava.split(" ").last)
+      lastBit.toASCII.filter(isBibTeXFriendly)
+    }
+
     val persons   = if(!entry.authors.isEmpty) entry.authors else entry.editors
     val lastnames = if(persons.size > 3) {
-      strToASCII(persons(0).split(" ").last) + "ETAL"
+      lastFromPerson(persons(0)) + "ETAL"
     } else {
-      strToASCII(persons.map(ss => ss.split(" ").last).mkString(""))
+      persons.map(lastFromPerson).mkString("")
     }
 
     val yr = entry.year match {
@@ -45,10 +52,9 @@ package object data {
       }
       case None => ""
     }
-    val title = entry.title match {
-      case Some(t) => camelcasify(t).take(6).mkString("")
-      case None => ""
-    }
+    val title = entry.title.map(t =>
+      camelcasify(t).take(6).mkString("")
+    ).getOrElse("")
 
     lastnames + yr + title
   }
@@ -60,54 +66,61 @@ package object data {
   }
 
   private[data] def entryToInline(entry : BibTeXEntry) : String = {
-    val persons = if(!entry.authors.isEmpty) {
-      (if(entry.authors.size > 4) {
-        shortenName(entry.authors.head) + " et al."
-      } else {
-        entry.authors.map(shortenName(_)).mkString(", ")
-      })
-    } else if(!entry.editors.isEmpty) {
-      (if(entry.editors.size > 4) {
-        shortenName(entry.editors.head) + " et al."
-      } else {
-        entry.editors.map(shortenName(_)).mkString(", ")
-      }) + "ed."
+    val (persons,areEditors) = if(!entry.authors.isEmpty) {
+      (entry.authors, false)
     } else {
-      "?"
+      (entry.editors, true)
     }
 
-    val title = "\"" + entry.title.getOrElse("?") + "\""
+    val personString = if(persons.size > 4) {
+      shortenName(persons.head.toJava) + " et al."
+    } else {
+      persons.map(p => shortenName(p.toJava)).mkString(", ")
+    }
+
+    val names = if(areEditors) (personString + " ed.") else personString
+
+    val title = "\"" + entry.title.map(_.toJava).getOrElse("?") + "\""
 
     val where = 
-      entry.booktitle.getOrElse(
-        entry.journal.getOrElse(
-          entry.school.getOrElse(
-            entry.howpublished.getOrElse("?"))))
+      entry.booktitle.map(_.toJava).getOrElse(
+        entry.journal.map(_.toJava).getOrElse(
+          entry.school.map(_.toJava).getOrElse(
+            entry.howpublished.map(_.toJava).getOrElse("?"))))
 
     val year = entry.year.map(_.toString).getOrElse("?")
 
-    persons + ", " + title + ", " + where + ", " + year
+    names + ", " + title + ", " + where + ", " + year
   }
 
   private[data] def entryToString(entry : BibTeXEntry, key : String = "XXX") : String = {
     val buffer = new StringBuilder
     buffer.append("@" + entry.entryType + "{" + key + ",\n")
 
-    def printOptField[T](name : String, value : BibTeXEntry=>Option[T]) {
+    def printOptField(name : String, value : BibTeXEntry=>Option[MString]) {
       value(entry).foreach(content => {
         buffer.append("  ")
         buffer.append("%12s = {".format(name))
-        buffer.append(latexify(content.toString))
+        buffer.append(content.toLaTeX)
         buffer.append("},\n")
       })
     }
 
-    def printSeqField[T](name : String, values : BibTeXEntry=>Seq[T]) {
+    def printOptInt(name : String, value : BibTeXEntry=>Option[Int]) {
+      value(entry).foreach(content => {
+        buffer.append("  ")
+        buffer.append("%12s = {".format(name))
+        buffer.append(content)
+        buffer.append("},\n")
+      })
+    }
+
+    def printSeqField(name : String, values : BibTeXEntry=>Seq[MString]) {
       val content = values(entry)
       if(!content.isEmpty) {
         buffer.append("  ")
         buffer.append("%12s = {".format(name))
-        buffer.append(content.map(c => latexify(c.toString)).mkString(" and "))
+        buffer.append(content.map(_.toLaTeX).mkString(" and "))
         buffer.append("},\n")
       }
     }
@@ -118,12 +131,12 @@ package object data {
     printOptField("booktitle", _.booktitle)
     printOptField("journal", _.journal)
     printOptField("pages", _.pages)
-    printOptField("chapter", _.chapter)
+    printOptInt("chapter", _.chapter)
     printOptField("volume", _.volume)
     printOptField("number", _.number)
     printOptField("series", _.series)
     printOptField("month", _.month)
-    printOptField("year", _.year)
+    printOptInt("year", _.year)
     printOptField("address", _.address)
     printOptField("edition", _.edition)
     printOptField("institution", _.institution)
@@ -139,48 +152,5 @@ package object data {
     printOptField("note", _.note)
 
     buffer.dropRight(2).append("\n}").toString
-  }
-
-  private def acceptableASCII(c : Char) : Boolean = {
-    (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
-  }
-  private def accentRemove(c : Char) : Seq[Char] = c match {
-    case 'À' | 'Á' | 'Â' | 'Ã' => "A"
-    case 'Ä' | 'Æ' => "AE"
-    case 'Å' => "AA"
-    case 'Ç' => "C"
-    case 'È' | 'É' | 'Ê' | 'Ë' => "E"
-    case 'Ì' | 'Í' | 'Î' | 'Ï' => "I"
-    case 'Ð' => "D"
-    case 'Ñ' => "N"
-    case 'Ò' | 'Ó' | 'Ô' | 'Õ' => "O"
-    case 'Ö' | 'Ø' => "OE"
-    case 'Ù' | 'Ú' | 'Û' => "U"
-    case 'Ü' => "UE"
-    case 'Ý' => "Y"
-    case 'Þ' => "TH"
-    case 'ß' => "ss"
-    case 'à' | 'á' | 'â' | 'ã' => "a"
-    case 'ä' | 'æ' => "ae"
-    case 'å' => "aa"
-    case 'ç' => "c"
-    case 'è' | 'é' | 'ê' | 'ë' => "e"
-    case 'ì' | 'í' | 'î' | 'ï' => "i"
-    case 'ð' => "d"
-    case 'ñ' => "n"
-    case 'ò' | 'ó' | 'ô' | 'õ' => "o"
-    case 'ö' | 'ø' => "oe"
-    case 'ù' | 'ú' | 'û' => "u"
-    case 'ü' => "ue"
-    case 'ý' | 'ÿ' => "y"
-    case 'þ' => "th"
-    case x if acceptableASCII(x) => Seq(x)
-    case other => ""
-  }
-
-  private def latexify(str : String) : String = str.flatMap(substForLaTeX)
-  private def substForLaTeX(c : Char) : Seq[Char] = c match {
-    case 'ø' => """{\o}"""
-    case x => Seq(x)
   }
 }

@@ -2,6 +2,7 @@ package bibimbap
 package dblp
 
 import bibimbap.data._
+import bibimbap.strings._
 
 import scala.io.Source
 
@@ -129,7 +130,7 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
             val entry = new InProceedings(
               authors,
               title,
-              venue.getOrElse(unknown),
+              MString.fromJava(venue.getOrElse(unknown)),
               yr2yr(venueYear).getOrElse(year.getOrElse(0)),
               pages = pages
             )
@@ -149,7 +150,7 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
             val entry = new Article(
               authors,
               title,
-              jour.getOrElse(unknown),
+              MString.fromJava(jour.getOrElse(unknown)),
               yr2yr(yr).getOrElse(year.getOrElse(0)),
               volume = vol,
               number = num,

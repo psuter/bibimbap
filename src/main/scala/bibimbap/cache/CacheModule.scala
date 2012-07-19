@@ -64,11 +64,11 @@ class CacheModule(settings : Settings) extends SearchModule(settings) {
     val doc = new Document()
     
     for(title <- entry.title) {
-      doc.add(new Field("title", title, Field.Store.YES, Field.Index.ANALYZED))
+      doc.add(new Field("title", title.toJava, Field.Store.YES, Field.Index.ANALYZED))
     }
 
     if(!entry.authors.isEmpty) {
-      doc.add(new Field("authors", entry.authors.mkString(" "), Field.Store.YES, Field.Index.ANALYZED))
+      doc.add(new Field("authors", entry.authors.map(_.toJava).mkString(" "), Field.Store.YES, Field.Index.ANALYZED))
     }
 
     for(url <- link) {
@@ -79,11 +79,11 @@ class CacheModule(settings : Settings) extends SearchModule(settings) {
     entry.title.foreach(sb.append(_))
     sb.append(" ")
     entry.authors.foreach { author =>
-      sb.append(author)
+      sb.append(author.toJava)
       sb.append(" ")
     }
-    entry.journal.foreach(sb.append(_))
-    entry.booktitle.foreach(sb.append(_))
+    entry.journal.foreach(j => sb.append(j.toJava))
+    entry.booktitle.foreach(b => sb.append(b.toJava))
     entry.year.foreach(sb.append(_))
     
     doc.add(new Field("blob", sb.toString, Field.Store.NO, Field.Index.ANALYZED))

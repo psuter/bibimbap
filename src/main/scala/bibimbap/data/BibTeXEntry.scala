@@ -1,6 +1,8 @@
 package bibimbap
 package data
 
+import bibimbap.strings._
+
 object BibTeXEntryTypes extends Enumeration {
   type BibTeXEntryType = Value
   val Article = Value("article")
@@ -23,30 +25,30 @@ object BibTeXEntryTypes extends Enumeration {
 trait BibTeXEntry extends Serializable {
   val entryType : BibTeXEntryTypes.BibTeXEntryType
 
-  val address      : Option[String] = None
-  val annote       : Option[String] = None
-  val authors      : Seq[String]    = Seq.empty
-  val booktitle    : Option[String] = None
-  val chapter      : Option[Int]    = None
-  val edition      : Option[String] = None
-  val editors      : Seq[String]    = Seq.empty
-  val eprint       : Option[String] = None
-  val howpublished : Option[String] = None
-  val institution  : Option[String] = None
-  val journal      : Option[String] = None
-  val key          : Option[String] = None
-  val month        : Option[String] = None
-  val note         : Option[String] = None
-  val number       : Option[String] = None
-  val organization : Option[String] = None
-  val pages        : Option[String] = None
-  val publisher    : Option[String] = None
-  val school       : Option[String] = None
-  val series       : Option[String] = None
-  val title        : Option[String] = None
-  val trType       : Option[String] = None
-  val url          : Option[String] = None
-  val volume       : Option[String] = None
+  val address      : Option[MString] = None
+  val annote       : Option[MString] = None
+  val authors      : Seq[MString]    = Seq.empty
+  val booktitle    : Option[MString] = None
+  val chapter      : Option[Int]     = None
+  val edition      : Option[MString] = None
+  val editors      : Seq[MString]    = Seq.empty
+  val eprint       : Option[MString] = None
+  val howpublished : Option[MString] = None
+  val institution  : Option[MString] = None
+  val journal      : Option[MString] = None
+  val key          : Option[MString] = None
+  val month        : Option[MString] = None
+  val note         : Option[MString] = None
+  val number       : Option[MString] = None
+  val organization : Option[MString] = None
+  val pages        : Option[MString] = None
+  val publisher    : Option[MString] = None
+  val school       : Option[MString] = None
+  val series       : Option[MString] = None
+  val title        : Option[MString] = None
+  val trType       : Option[MString] = None
+  val url          : Option[MString] = None
+  val volume       : Option[MString] = None
   val year         : Option[Int]    = None
 
   override def toString = entryToString(this, entryToKey(this))
@@ -81,13 +83,13 @@ object BibTeXEntry {
 final class InconsistentBibTeXEntry(msg : String) extends Exception(msg)
 
 final class Article(
-  auth : Seq[String], titl : String, jour : String, yr : Int,
-  override val volume : Option[String] = None,
-  override val number : Option[String] = None,
-  override val pages : Option[String] = None,
-  override val month : Option[String] = None,
-  override val note : Option[String] = None,
-  override val key : Option[String] = None
+  auth : Seq[MString], titl : MString, jour : MString, yr : Int,
+  override val volume : Option[MString] = None,
+  override val number : Option[MString] = None,
+  override val pages : Option[MString] = None,
+  override val month : Option[MString] = None,
+  override val note : Option[MString] = None,
+  override val key : Option[MString] = None
 ) extends BibTeXEntry {
   implicit val entryType = BibTeXEntryTypes.Article
 
@@ -102,14 +104,14 @@ final class Article(
 }
 
 final class Book(
-  auth : Seq[String], editrs : Seq[String], titl : String, pubshr : String, yr : Int,
-  override val volume : Option[String] = None,
-  override val series : Option[String] = None,
-  override val address : Option[String] = None,
-  override val edition : Option[String] = None,
-  override val month : Option[String] = None,
-  override val note : Option[String] = None,
-  override val key : Option[String] = None
+  auth : Seq[MString], editrs : Seq[MString], titl : MString, pubshr : MString, yr : Int,
+  override val volume : Option[MString] = None,
+  override val series : Option[MString] = None,
+  override val address : Option[MString] = None,
+  override val edition : Option[MString] = None,
+  override val month : Option[MString] = None,
+  override val note : Option[MString] = None,
+  override val key : Option[MString] = None
 ) extends BibTeXEntry {
   implicit val entryType = BibTeXEntryTypes.Book
 
@@ -127,16 +129,16 @@ final class Book(
 // Missing : booklet, conference, inbook, incollection
 
 final class InProceedings(
-  auth : Seq[String], titl : String, bktitl : String, yr : Int,
-  override val editors : Seq[String] = Seq.empty,
-  override val series : Option[String] = None,
-  override val pages : Option[String] = None,
-  override val organization : Option[String] = None,
-  override val publisher : Option[String] = None,
-  override val address : Option[String] = None,
-  override val month : Option[String] = None,
-  override val note : Option[String] = None,
-  override val key : Option[String] = None
+  auth : Seq[MString], titl : MString, bktitl : MString, yr : Int,
+  override val editors : Seq[MString] = Seq.empty,
+  override val series : Option[MString] = None,
+  override val pages : Option[MString] = None,
+  override val organization : Option[MString] = None,
+  override val publisher : Option[MString] = None,
+  override val address : Option[MString] = None,
+  override val month : Option[MString] = None,
+  override val note : Option[MString] = None,
+  override val key : Option[MString] = None
 ) extends BibTeXEntry {
   implicit val entryType = BibTeXEntryTypes.InProceedings
 
@@ -153,14 +155,14 @@ final class InProceedings(
 // Missing : manual, mastersthesis, misc, phdthesis
 
 final class Proceedings(
-  titl : String, yr : Int,
-  override val editors : Seq[String] = Seq.empty,
-  override val publisher  : Option[String] = None,
-  override val organization : Option[String] = None,
-  override val address : Option[String] = None,
-  override val month : Option[String] = None,
-  override val note : Option[String] = None,
-  override val key : Option[String] = None
+  titl : MString, yr : Int,
+  override val editors : Seq[MString] = Seq.empty,
+  override val publisher  : Option[MString] = None,
+  override val organization : Option[MString] = None,
+  override val address : Option[MString] = None,
+  override val month : Option[MString] = None,
+  override val note : Option[MString] = None,
+  override val key : Option[MString] = None
 ) extends BibTeXEntry {
   implicit val entryType = BibTeXEntryTypes.Proceedings
 
