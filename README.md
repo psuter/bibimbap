@@ -38,3 +38,12 @@ When properly configured, here is how a session can look like:
 
 ...and that famous BDD paper is now imported in `managed.bib`. Moreoever, the
 corresponding key is copied to the system clipboard.
+
+Running
+-------
+
+The simplest way of running bibimbap is to generate a single jar file that includes all dependencies. You can obtain one by running
+
+  $ sbt assembly
+
+The result will be in `target/bibimbap-assembly-???.jar`. You can run it using `java -jar ...`.
