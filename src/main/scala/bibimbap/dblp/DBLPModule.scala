@@ -171,9 +171,17 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
     }
   }
 
+  private val FinalDot = """(.*)\.\s*""".r
   private def cleanupTitle(title : String) : String = {
+    import strings.StringUtils
+
     val trimmed = title.trim
-    if(trimmed.endsWith(".")) trimmed.substring(0, trimmed.length - 1) else trimmed
+    val noDot = trimmed match {
+      case FinalDot(s) => s
+      case other => other
+    }
+
+    StringUtils.unescapeHTML(noDot)
   }
 
   private lazy val JournalAbbr = """(.*) \(([A-Z]+)\)""".r
