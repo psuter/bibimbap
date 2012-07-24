@@ -12,6 +12,8 @@ scalacOptions += "-deprecation"
 
 scalacOptions += "-unchecked"
 
+libraryDependencies += "org.scalatest" %% "scalatest" % "1.8" % "test"
+
 libraryDependencies += "jline" % "jline" % "0.9.94"
 
 libraryDependencies += "org.apache.lucene" % "lucene-core" % "3.6.0"

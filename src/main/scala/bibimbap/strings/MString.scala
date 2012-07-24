@@ -83,6 +83,6 @@ object MString {
 
     def isASCII(c : Char) : Boolean = (c >= ' ' && c <= '~')  
 
-    removeDiacritics(str.flatMap(transliterate)).filter(isASCII)
+    removeDiacritics(str.flatMap(transliterate)).filter(isASCII).trim
   }
 }
