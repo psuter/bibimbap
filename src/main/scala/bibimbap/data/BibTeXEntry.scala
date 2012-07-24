@@ -49,7 +49,7 @@ trait BibTeXEntry extends Serializable {
   val trType       : Option[MString] = None
   val url          : Option[MString] = None
   val volume       : Option[MString] = None
-  val year         : Option[Int]    = None
+  val year         : Option[Int]     = None
 
   override def toString = entryToString(this, entryToKey(this))
 
@@ -57,26 +57,95 @@ trait BibTeXEntry extends Serializable {
 
   def inlineString = entryToInline(this)
 
-  final def serialized = BibTeXEntry.serialize(this)
+  lazy val entryMap : Map[String,MString] = {
+    var base = Map("type" -> MString.fromJava(entryType.toString))
+    def add(name : String, f : Option[MString]) {
+      f.foreach(ms => base = base + (name -> ms))
+    }
+    def addSeq(name : String, seq : Seq[MString]) {
+      if(!seq.isEmpty) {
+        base = base + (name -> MString.fromJava(seq.map(_.toJava).mkString(" and ")))
+      }
+    }
+    add("address",      this.address)
+    add("annote",       this.annote)
+    addSeq("authors",   this.authors)
+    add("booktitle",    this.booktitle)
+    add("chapter",      this.chapter.map(c => MString.fromJava(c.toString)))
+    add("edition",      this.edition)
+    addSeq("editors",   this.editors)
+    add("eprint",       this.eprint)
+    add("howpublished", this.howpublished)
+    add("institution",  this.institution)
+    add("journal",      this.journal)
+    add("key",          this.key)
+    add("month",        this.month)
+    add("note",         this.note)
+    add("number",       this.number)
+    add("organization", this.organization)
+    add("pages",        this.pages)
+    add("publisher",    this.publisher)
+    add("school",       this.school)
+    add("series",       this.series)
+    add("title",        this.title)
+    add("trType",       this.trType)
+    add("url",          this.url)
+    add("volume",       this.volume)
+    add("year",         this.year.map(y => MString.fromJava(y.toString)))
+
+    base
+  }
 }
 
 object BibTeXEntry {
-  def serialize(entry : BibTeXEntry) : Array[Byte] = {
-    import java.io.{ByteArrayOutputStream,ObjectOutputStream}
-    val baos = new ByteArrayOutputStream(1024)
-    val oos  = new ObjectOutputStream(baos)
-    oos.writeObject(entry)
-    baos.toByteArray
-  }
+  def fromEntryMap(map : Map[String,MString]) : Option[BibTeXEntry] = {
+    def get(key : String) : Option[MString] = map.get(key)
+    def getInt(key : String) : Option[Int] = map.get(key).flatMap(_.toIntOpt)
+    def getSeq(key : String) : Seq[MString] = {
+      map.get(key).map(ms => {
+        val ss : Seq[MString] = ms.toJava.split(" and ").map(s => MString.fromJava(s))
+        ss
+      }).getOrElse(
+        Seq.empty[MString]
+      )
+    }
 
-  def deserialize(bytes : Array[Byte]) : Option[BibTeXEntry] = {
-    import java.io.{ByteArrayInputStream,ObjectInputStream}
-    val bais = new ByteArrayInputStream(bytes)
-    val ois  = new ObjectInputStream(bais)
-    ois.readObject() match {
-      case be : BibTeXEntry => Some(be)
+    map.get("type").flatMap(_.toJava match {
+      case "article" => for(
+        a <- Some(getSeq("authors")) if !a.isEmpty;
+        t <- get("title");
+        j <- get("journal");
+        y <- getInt("year")) yield {
+        new Article(a, t, j, y,
+          volume = get("volume"),
+          number = get("number"),
+          pages = get("pages"),
+          month = get("month"),
+          note = get("note"),
+          key = get("key")
+        )
+      }
+
+      case "inproceedings" => for(
+        a <- Some(getSeq("authors")) if !a.isEmpty;
+        t <- get("title");
+        b <- get("booktitle");
+        y <- getInt("year")) yield {
+        new InProceedings(a, t, b, y,
+          editors = getSeq("editors"),
+          series = get("series"),
+          pages = get("pages"),
+          organization = get("organization"),
+          publisher = get("publisher"),
+          address = get("address"),
+          month = get("month"),
+          note = get("note"),
+          key = get("key")
+        ) 
+      }
+
       case _ => None
-    } 
+    })
   }
 }
 

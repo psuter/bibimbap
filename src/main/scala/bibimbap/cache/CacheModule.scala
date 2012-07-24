@@ -2,6 +2,7 @@ package bibimbap
 package cache
 
 import bibimbap.data._
+import bibimbap.strings._
 
 import java.io.File
 
@@ -63,12 +64,8 @@ class CacheModule(settings : Settings) extends SearchModule(settings) {
   private def addEntry(entry : BibTeXEntry, link : Option[String]) : Unit = {
     val doc = new Document()
     
-    for(title <- entry.title) {
-      doc.add(new Field("title", title.toJava, Field.Store.YES, Field.Index.ANALYZED))
-    }
-
-    if(!entry.authors.isEmpty) {
-      doc.add(new Field("authors", entry.authors.map(_.toJava).mkString(" "), Field.Store.YES, Field.Index.ANALYZED))
+    for((k,v) <- entry.entryMap) {
+      doc.add(new Field(k, v.toJava, Field.Store.YES, Field.Index.NO))
     }
 
     for(url <- link) {
@@ -88,9 +85,6 @@ class CacheModule(settings : Settings) extends SearchModule(settings) {
     
     doc.add(new Field("blob", sb.toString, Field.Store.NO, Field.Index.ANALYZED))
 
-    val bytes : Array[Byte] = entry.serialized
-    doc.add(new Field("serialized", bytes))
-
     val config = new IndexWriterConfig(Version.LUCENE_36, analyzer)
     val writer = new IndexWriter(index, config)
     writer.addDocument(doc)
@@ -98,8 +92,12 @@ class CacheModule(settings : Settings) extends SearchModule(settings) {
   }
 
   private def documentToSearchResultEntry(document : Document) : Option[SearchResultEntry] = {
-    for(bytes <- Option(document.getBinaryValue("serialized"));
-        entry <- BibTeXEntry.deserialize(bytes)) yield {
+    import scala.collection.JavaConversions._
+    val em : Map[String,MString] = document.getFields().map(f =>
+      (f.name -> MString.fromJava(f.stringValue))
+    ).toMap
+
+    for(entry <- BibTeXEntry.fromEntryMap(em)) yield {
       val url = Option(document.get("url"))
       SearchResultEntry(entry, () => entry, url, module.keyword) 
     }
