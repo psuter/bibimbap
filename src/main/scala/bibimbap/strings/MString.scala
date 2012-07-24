@@ -78,7 +78,7 @@ object MString {
       import java.text.Normalizer
       import Normalizer.Form.NFD
 
-      Normalizer.normalize(s, NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+      Normalizer.normalize(s, NFD).replaceAll("""\p{InCombiningDiacriticalMarks}+""", "")
     }
 
     def isASCII(c : Char) : Boolean = (c >= ' ' && c <= '~')  
