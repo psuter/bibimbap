@@ -6,7 +6,7 @@ import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 
 class StringConversions extends FunSuite with ShouldMatchers {
-  test("Transliteration 1") {
+  test("Transliteration") {
     def produces(in : String, out : String) {
       MString.fromJava(in).toASCII should equal (out)
     }
