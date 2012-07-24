@@ -51,7 +51,7 @@ object MString {
       case 'β'       => "beta"
       case 'γ'       => "gamma"
       case 'δ'       => "delta"
-      case 'ε'       => "epsilon"
+      case 'ε' | 'ϵ' => "epsilon"
       case 'ζ'       => "zeta"
       case 'η'       => "eta"
       case 'θ'       => "theta"
