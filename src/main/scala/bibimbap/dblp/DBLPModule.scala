@@ -82,8 +82,11 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
 
   private val unknown : String = "???"
   private val ConfVenueStr = """(.*) (\d\d\d\d):([\d- ]*)""".r
-  private val JourVenueStr = """(.*) (\d+)\((\d+)\):([\d- ]*) \((\d\d\d\d)\)""".r
-"Commun. ACM (CACM) 55(2):103-111 (2012)"
+  // e.g. "Commun. ACM (CACM) 55(2):103-111 (2012)"
+  private val JourVenueStr1 = """(.*) (\d+)\((\d+)\):([\d- ]*) \((\d\d\d\d)\)""".r
+  // e.g. "Acta Inf. (ACTA) 1:271-281 (1972)"
+  private val JourVenueStr2 = """(.*) (\d+):([\d- ]*) \((\d\d\d\d)\)""".r
+
   private def recordToResult(record : JValue) : Option[SearchResultEntry] = {
     def yr2yr(year : Option[String]) : Option[Int] = try {
       year.map(_.trim.toInt)
@@ -140,8 +143,11 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
           case JString("article") => {
             // info("In article : " + (obj \ "dblp:venue" \ "text"))
             val (jour,vol,num,pgs,yr) = (obj \ "dblp:venue" \ "text") match {
-              case JString(vs @ JourVenueStr(j,v,n,p,y)) => {
+              case JString(vs @ JourVenueStr1(j,v,n,p,y)) => {
                 (Some(cleanupJournal(j)), Some(v), Some(n), Some(cleanupPages(p)), Some(y))
+              }
+              case JString(vs @ JourVenueStr2(j,v,p,y)) => {
+                (Some(cleanupJournal(j)), Some(v), None, Some(cleanupPages(p)), Some(y))
               }
               // case JString(os) => warn("Could not extract venue information from string [" + os + "]."); (None, None, None, None, None)
               case _ => (None, None, None, None, None)
