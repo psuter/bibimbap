@@ -17,4 +17,17 @@ class StringConversions extends FunSuite with ShouldMatchers {
     produces("élémentaire", "elementaire")
     produces("Warning ⚠ ", "Warning")
   }
+
+  test("To LaTeX") {
+    def produces(in : String, out : String) {
+      MString.fromJava(in).toLaTeX should equal (out)
+    }
+
+    produces("Keyser Söze", """Keyser S\"{o}ze""")
+    produces("Lettøl from Ålborg", """Lett{\o}l from {\AA}lborg""")
+    produces("β-conversion", """$\beta$-conversion""")
+    produces("élémentaire", """\'{e}l\'{e}mentaire""")
+    produces("C#", """C{\#}""")
+
+  }
 }
