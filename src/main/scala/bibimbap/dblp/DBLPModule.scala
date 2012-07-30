@@ -82,10 +82,16 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
 
   private val unknown : String = "???"
   private val ConfVenueStr = """(.*) (\d\d\d\d):([\d- ]*)""".r
+
+  private val CoRR = """(.*CoRR.*)""".r
+
+  // Journal entries 
   // e.g. "Commun. ACM (CACM) 55(2):103-111 (2012)"
   private val JourVenueStr1 = """(.*) (\d+)\((\d+)\):([\d- ]*) \((\d\d\d\d)\)""".r
   // e.g. "Acta Inf. (ACTA) 1:271-281 (1972)"
   private val JourVenueStr2 = """(.*) (\d+):([\d- ]*) \((\d\d\d\d)\)""".r
+  // e.g. "Logical Methods in Computer Science (LMCS) 4(4) (2008)"
+  private val JourVenueStr3 = """(.*) (\d+)\((\d+)\) \((\d\d\d\d)\)""".r
 
   private def recordToResult(record : JValue) : Option[SearchResultEntry] = {
     def yr2yr(year : Option[String]) : Option[Int] = try {
@@ -142,27 +148,35 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
 
           case JString("article") => {
             // info("In article : " + (obj \ "dblp:venue" \ "text"))
-            val (jour,vol,num,pgs,yr) = (obj \ "dblp:venue" \ "text") match {
+            val (isCoRR,jour,vol,num,pgs,yr) = (obj \ "dblp:venue" \ "text") match {
+              case JString(CoRR(_)) => (true, None, None, None, None, None)
               case JString(vs @ JourVenueStr1(j,v,n,p,y)) => {
-                (Some(cleanupJournal(j)), Some(v), Some(n), Some(cleanupPages(p)), Some(y))
+                (false, Some(cleanupJournal(j)), Some(v), Some(n), Some(cleanupPages(p)), Some(y))
               }
               case JString(vs @ JourVenueStr2(j,v,p,y)) => {
-                (Some(cleanupJournal(j)), Some(v), None, Some(cleanupPages(p)), Some(y))
+                (false, Some(cleanupJournal(j)), Some(v), None, Some(cleanupPages(p)), Some(y))
               }
-              // case JString(os) => warn("Could not extract venue information from string [" + os + "]."); (None, None, None, None, None)
-              case _ => (None, None, None, None, None)
+              case JString(vs @ JourVenueStr3(j,v,n,y)) => {
+                (false, Some(cleanupJournal(j)), Some(v), Some(n), None, Some(y))
+              }
+              // case JString(os) => warn("Could not extract venue information from string [" + os + "]."); (false, None, None, None, None, None)
+              case _ => (false, None, None, None, None, None)
             }
 
-            val entry = new Article(
-              authors,
-              title,
-              MString.fromJava(jour.getOrElse(unknown)),
-              yr2yr(yr).getOrElse(year.getOrElse(0)),
-              volume = vol,
-              number = num,
-              pages = pgs
-            )
-            Some(SearchResultEntry(entry, () => entry, link, module.keyword))
+            if(isCoRR) {
+              None
+            } else {
+              val entry = new Article(
+                authors,
+                title,
+                MString.fromJava(jour.getOrElse(unknown)),
+                yr2yr(yr).getOrElse(year.getOrElse(0)),
+                volume = vol,
+                number = num,
+                pages = pgs
+              )
+              Some(SearchResultEntry(entry, () => entry, link, module.keyword))
+            }
           }
 
           case JString(other) => {
