@@ -81,9 +81,12 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
   }
 
   private val unknown : String = "???"
-  private val ConfVenueStr = """(.*) (\d\d\d\d):([\d- ]*)""".r
 
   private val CoRR = """(.*CoRR.*)""".r
+  
+  // Conference paper entries ("inproceedings")
+  private val ConfVenueStr1 = """(.*) (\d\d\d\d):([\d- ]*)""".r
+  private val ConfVenueStr2 = """(.*) (\d\d\d\d)""".r
 
   // Journal entries 
   // e.g. "Commun. ACM (CACM) 55(2):103-111 (2012)"
@@ -127,12 +130,9 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
         (obj \ "dblp:type") match {
           case JString("inproceedings") => {
             val (venue,venueYear,pages) = (obj \ "dblp:venue" \ "text") match {
-              case JString(vs @ ConfVenueStr(v, y, p)) => {
-                // info("Venue string : " + vs)
-                // info("Breakdown : [" + v + "], [" + y + "], [" + p + "]")
-                (Some(v), Some(y), Some(cleanupPages(p)))
-              }
-              // case JString(os) => warn("Could not extract venue information from string [" + os + "]."); (None, None, None)
+              case JString(ConfVenueStr1(v, y, p)) => (Some(cleanupVenue(v)), Some(y), Some(cleanupPages(p)))
+              case JString(ConfVenueStr2(v, y)) => (Some(cleanupVenue(v)), Some(y), None)
+              case JString(os) => warn("Could not extract venue information from string [" + os + "]."); (None, None, None)
               case _ => (None, None, None)
             }
 
@@ -150,15 +150,9 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
             // info("In article : " + (obj \ "dblp:venue" \ "text"))
             val (isCoRR,jour,vol,num,pgs,yr) = (obj \ "dblp:venue" \ "text") match {
               case JString(CoRR(_)) => (true, None, None, None, None, None)
-              case JString(vs @ JourVenueStr1(j,v,n,p,y)) => {
-                (false, Some(cleanupJournal(j)), Some(v), Some(n), Some(cleanupPages(p)), Some(y))
-              }
-              case JString(vs @ JourVenueStr2(j,v,p,y)) => {
-                (false, Some(cleanupJournal(j)), Some(v), None, Some(cleanupPages(p)), Some(y))
-              }
-              case JString(vs @ JourVenueStr3(j,v,n,y)) => {
-                (false, Some(cleanupJournal(j)), Some(v), Some(n), None, Some(y))
-              }
+              case JString(JourVenueStr1(j,v,n,p,y)) => (false, Some(cleanupJournal(j)), Some(v), Some(n), Some(cleanupPages(p)), Some(y))
+              case JString(JourVenueStr2(j,v,p,y)) => (false, Some(cleanupJournal(j)), Some(v), None, Some(cleanupPages(p)), Some(y))
+              case JString(JourVenueStr3(j,v,n,y)) => (false, Some(cleanupJournal(j)), Some(v), Some(n), None, Some(y))
               // case JString(os) => warn("Could not extract venue information from string [" + os + "]."); (false, None, None, None, None, None)
               case _ => (false, None, None, None, None, None)
             }
@@ -202,6 +196,10 @@ class DBLPModule(settings : Settings) extends SearchModule(settings) {
     }
 
     StringUtils.unescapeHTML(noDot)
+  }
+
+  private def cleanupVenue(venue : String) : String = {
+    venue.trim
   }
 
   private lazy val JournalAbbr = """(.*) \(([A-Z]+)\)""".r
