@@ -165,7 +165,8 @@ object Main {
 
     override val subModules = List(
       new cache.CacheModule(settings),
-      new dblp.DBLPModule(settings)
+      new dblp.DBLPModule(settings),
+      new pdf.PDFModule(settings)
     )
   }
 
