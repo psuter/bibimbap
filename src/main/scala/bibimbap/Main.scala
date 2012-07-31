@@ -4,10 +4,18 @@ import bibimbap.data._
 
 import jline._
 
+import xsbti.{AppMain,AppConfiguration,Exit}
+
 import scala.collection.mutable.{Map=>MutableMap}
 import scala.sys.process._
 
 import java.io.{File,FileWriter}
+
+class Main extends AppMain {
+  def run(config : AppConfiguration) = new Exit {
+    val code : Int = Main.run(config.arguments)
+  }
+}
 
 object Main {
   private val homeDir = System.getProperty("user.home") + System.getProperty("file.separator")
@@ -16,9 +24,10 @@ object Main {
   private val historyFileName = homeDir + ".bibimbaphistory"
 
   private val replID = "bibimbap> "
+  
+  def main(args : Array[String]) : Unit = sys.exit(run(args))
 
-
-  def main(args : Array[String]) : Unit = {
+  def run(args : Array[String]) : Int = {
     sayHello
     val settings = (new ConfigFileParser(configFileName)).parse.getOrElse(DefaultSettings)
 
@@ -44,8 +53,8 @@ object Main {
       }
       settings.logger.info("")
     }
+    0
   }
-
 
   private def mainModule(settings : Settings) = new Module(settings) {
     val name = ""
