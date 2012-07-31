@@ -1,6 +1,6 @@
-[app]
+[bibimbap]
   version: 0.0.1
-  org: ch.epfl.lara
+  org: net.psuter
   name: bibimbap
   class: bibimbap.Main
 [scala]
