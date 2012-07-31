@@ -2,7 +2,7 @@ seq(assemblySettings : _*)
 
 seq(conscriptSettings : _*)
 
-organization := "ch.epfl.lara"
+organization := "net.psuter"
 
 name := "bibimbap"
 
