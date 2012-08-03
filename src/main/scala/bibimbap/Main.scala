@@ -2,12 +2,16 @@ package bibimbap
 
 import bibimbap.data._
 
-import jline._
+import jline.console.ConsoleReader
+import jline.console.completer.StringsCompleter
+import jline.console.history.FileHistory
 
 import scala.collection.mutable.{Map=>MutableMap}
 import scala.sys.process._
 
 import java.io.{File,FileWriter}
+
+import scala.collection.JavaConverters._
 
 object Main {
   private val homeDir = System.getProperty("user.home") + System.getProperty("file.separator")
@@ -27,10 +31,10 @@ object Main {
     
     val reader = new ConsoleReader
 
-    val testCompletor = new SimpleCompletor(theMainModule.allSubKeywords.toArray)
-    reader.addCompletor(testCompletor)
+    val testCompleter = new StringsCompleter(theMainModule.allSubKeywords.asJavaCollection)
+    reader.addCompleter(testCompleter)
 
-    val history = new History(new File(historyFileName))
+    val history = new FileHistory(new File(historyFileName))
     reader.setHistory(history)
 
     var line : String = null
