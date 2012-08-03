@@ -4,18 +4,10 @@ import bibimbap.data._
 
 import jline._
 
-import xsbti.{AppMain,AppConfiguration,Exit}
-
 import scala.collection.mutable.{Map=>MutableMap}
 import scala.sys.process._
 
 import java.io.{File,FileWriter}
-
-class Main extends AppMain {
-  def run(config : AppConfiguration) = new Exit {
-    val code : Int = Main.run(config.arguments)
-  }
-}
 
 object Main {
   private val homeDir = System.getProperty("user.home") + System.getProperty("file.separator")
