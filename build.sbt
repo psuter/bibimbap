@@ -14,9 +14,11 @@ scalacOptions += "-unchecked"
 
 fork := true
 
+javaOptions in (Test, run) += "-Djline.shutdownhook=false"
+
 libraryDependencies += "org.scalatest" %% "scalatest" % "1.8" % "test"
 
-libraryDependencies += "jline" % "jline" % "2.6"
+libraryDependencies += "jline" % "jline" % "2.7"
 
 libraryDependencies += "org.apache.lucene" % "lucene-core" % "3.6.0"
 
