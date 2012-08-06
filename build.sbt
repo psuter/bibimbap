@@ -1,10 +1,10 @@
-import AssemblyKeys._
+seq(assemblySettings : _*)
 
-assemblySettings
+organization := "net.psuter"
 
 name := "bibimbap"
 
-version := "0.1"
+version := "0.0.1"
 
 scalaVersion := "2.9.1"
 

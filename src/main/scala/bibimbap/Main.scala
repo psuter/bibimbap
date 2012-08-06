@@ -16,9 +16,10 @@ object Main {
   private val historyFileName = homeDir + ".bibimbaphistory"
 
   private val replID = "bibimbap> "
+  
+  def main(args : Array[String]) : Unit = sys.exit(run(args))
 
-
-  def main(args : Array[String]) : Unit = {
+  def run(args : Array[String]) : Int = {
     sayHello
     val settings = (new ConfigFileParser(configFileName)).parse.getOrElse(DefaultSettings)
 
@@ -44,8 +45,8 @@ object Main {
       }
       settings.logger.info("")
     }
+    0
   }
-
 
   private def mainModule(settings : Settings) = new Module(settings) {
     val name = ""
