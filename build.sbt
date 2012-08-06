@@ -1,7 +1,5 @@
 seq(assemblySettings : _*)
 
-seq(conscriptSettings : _*)
-
 organization := "net.psuter"
 
 name := "bibimbap"
