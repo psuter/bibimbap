@@ -4,24 +4,27 @@ import akka.actor._
 
 class Logger(settings: Settings) extends Actor {
   private def out(msg: String) {
-    println(msg)
+    Console.println(msg)
   }
 
   var store = List[Any]()
 
   def receive = {
     case LoggerFlush =>
-      sender ! LoggerFlush 
+      Console.flush()
+
       context.become {
         case LoggerFlush =>
           // Ingore
         case LoggerContinue =>
+          context.unbecome()
           store.foreach(receive(_))
           store = Nil
-          context.unbecome()
         case m => 
           store = m :: store
       }
+
+      sender ! LoggerFlush 
 
     case LoggerContinue =>
       // Ingore

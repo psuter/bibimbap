@@ -4,6 +4,7 @@ import akka.actor._
 
 trait Module extends Actor {
   val logger: ActorRef
+  val repl: ActorRef
 
   val name: String
 

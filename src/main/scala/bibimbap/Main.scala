@@ -15,6 +15,6 @@ object Main {
 
     val repl = system.actorOf(Props(new Repl(homeDir, configFileName, historyFileName)), name = "repl")
 
-    repl ! Start
+    repl ! ReadLine
   }
 }
