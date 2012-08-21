@@ -28,7 +28,7 @@ libraryDependencies ++= Seq(
     "org.apache.lucene" % "lucene-core" % "3.6.0",
     "commons-io" % "commons-io" % "2.4",
     "org.apache.commons" % "commons-lang3" % "3.1",
-//    "com.codahale" %% "jerkson" % "0.5.0",
+    "com.codahale" %% "jerkson" % "0.5.0",
     "com.typesafe.akka" % "akka-actor" % "2.1-M1"
 )
 

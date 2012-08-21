@@ -25,3 +25,6 @@ case object Shutdown extends CommandResult
 
 case object LoggerFlush
 case object LoggerContinue
+
+case class Search(terms: List[String])
+case class LastResults(results: data.SearchResults)

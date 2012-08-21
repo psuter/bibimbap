@@ -16,8 +16,6 @@ import jline.console.history.FileHistory
 import java.io.File
 
 class Repl(homeDir: String, configFileName: String, historyFileName: String)  extends Actor {
-  val executorService = Executors.newFixedThreadPool(10)
-  implicit val ec = ExecutionContext.fromExecutor(executorService)
   implicit val timeout = Timeout(20.seconds)
 
   val settings = (new ConfigFileParser(configFileName)).parse.getOrElse(DefaultSettings)
@@ -46,20 +44,20 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
     )
   }
 
+  def dispatchCommand(line: String): List[CommandResult] = {
+    val futures = modules.map(actor => (actor ? Command(line)).mapTo[CommandResult] recover {
+      case e: Throwable => CommandException(e)
+    })
+
+    try {
+      Await.result(Future.sequence(futures), 21.seconds)
+    } catch {
+      case e: java.util.concurrent.TimeoutException => List(CommandError("Timeout while waiting for command result"))
+    }
+  }
 
   def receive = {
     case ReadLine =>
-      def dispatchCommand(line: String): List[CommandResult] = {
-        val futures = modules.map(actor => (actor ? Command(line)).mapTo[CommandResult] recover {
-          case e: Throwable => CommandException(e)
-        })
-
-        try {
-          Await.result(Future.sequence(futures), 21.seconds)
-        } catch {
-          case e: java.util.concurrent.TimeoutException => List(CommandError("Timeout while waiting for command result"))
-        }
-      }
       // Flush message box of Logger and tore subsequent messages to avoid
       // messing with input
       Await.result(logger ? LoggerFlush, 1.seconds)

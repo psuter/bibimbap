@@ -3,12 +3,8 @@ package bibimbap
 import strings._
 
 package object data {
-  // The idea of the pair of entry, ()=>entry is that in some cases it is
-  // cheaper to get an incomplete version of the entry which is still
-  // sufficient for the purpose of displaying search results. The callback is
-  // used to "precise" the entry once it is examined or imported.
-  case class SearchResultEntry(entry : BibTeXEntry, callback : ()=>BibTeXEntry, link : Option[String], source : String)
-  type SearchResult = Iterable[SearchResultEntry]
+  case class SearchResult(entry : BibTeXEntry, link : Option[String], source : String)
+  type SearchResults = List[SearchResult]
 
   private[data] def forConsistency(msg : String)(expr : =>Boolean)(implicit entryType : BibTeXEntryTypes.BibTeXEntryType) {
     if(!expr) {
