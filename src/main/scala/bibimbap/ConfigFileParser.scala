@@ -6,7 +6,9 @@ import java.io.File
 import scala.collection.mutable.{Map=>MutableMap}
 
 class ConfigFileParser(filename : String) {
-  import DefaultSettings.logger.{info,warn}
+  def warn(any : Any) : Unit = {
+    Console.println(Console.RED + any + Console.RESET)
+  }
 
   def parse : Option[Settings] = {
     val file = new File(filename)
@@ -42,7 +44,6 @@ class ConfigFileParser(filename : String) {
       }
 
       Some(new Settings {
-        val logger = DefaultSettings.logger
         override def get(moduleName : String, key : String) : Option[String] = {
           sets.get((moduleName, key)) match {
             case s @ Some(_) => s
@@ -51,7 +52,7 @@ class ConfigFileParser(filename : String) {
         }
       })
     } catch {
-      case anything => warn(anything.getMessage); None
+      case e: Throwable => warn(e.getMessage); None
     }
   }
 }

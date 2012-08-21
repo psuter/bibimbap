@@ -1,5 +1,0 @@
-package bibimbap
-
-trait Config {
-
-}
