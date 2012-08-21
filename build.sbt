@@ -18,8 +18,6 @@ scalacOptions += "-unchecked"
 
 javaOptions in (Test, run) += "-Djline.shutdownhook=false"
 
-//resolvers += "repo.codahale.com" at "http://repo.codahale.com"
-
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= Seq(
@@ -28,7 +26,7 @@ libraryDependencies ++= Seq(
     "org.apache.lucene" % "lucene-core" % "3.6.0",
     "commons-io" % "commons-io" % "2.4",
     "org.apache.commons" % "commons-lang3" % "3.1",
-    "com.codahale" %% "jerkson" % "0.5.0",
+    "com.codahale" % "jerkson_2.9.1" % "0.5.0",
     "com.typesafe.akka" % "akka-actor" % "2.1-M1"
 )
 

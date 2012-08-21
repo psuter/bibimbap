@@ -12,14 +12,14 @@ import scala.concurrent.ExecutionContext
 
 import data._
 
-class Search(val repl: ActorRef, val logger: ActorRef) extends Module {
+class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends Module {
   val name = "Search"
 
   var lastSearch = List[SearchResult]()
 
   val searchModules = List(
-    context.actorOf(Props(new SearchLocal(repl, logger)), name = "SearchLocal"),
-    context.actorOf(Props(new SearchDBLP(repl, logger)),  name = "SearchDBLP")
+    context.actorOf(Props(new SearchLocal(repl, logger, settings)), name = "SearchLocal")
+    //context.actorOf(Props(new SearchDBLP(repl, logger, settings)),  name = "SearchDBLP")
   )
 
   def receive = {
@@ -31,8 +31,6 @@ class Search(val repl: ActorRef, val logger: ActorRef) extends Module {
   }
 
   def search(args: List[String]) = {
-    logger ! Info("Searching for "+args)
-
     val futures = searchModules.map(actor => (actor ? Search(args)).mapTo[SearchResult] recover {
       case e: Throwable => Nil
     })

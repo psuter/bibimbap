@@ -5,6 +5,7 @@ import akka.util.Timeout
 import scala.concurrent.util.duration._
 
 trait Module extends Actor {
+  val settings: Settings
   val logger: ActorRef
   val repl: ActorRef
 

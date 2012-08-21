@@ -18,8 +18,9 @@ import com.codahale.jerkson.Json
 import com.codahale.jerkson.ParsingException
 import com.codahale.jerkson.AST._
 
-class SearchDBLP(val repl: ActorRef, val logger: ActorRef) extends SearchModule {
-  val name = "Search DBLP"
+class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends SearchModule {
+  val name   = "Search DBLP"
+  val source = "dblp"
 
   def search(terms: List[String]): SearchResults = {
     try {

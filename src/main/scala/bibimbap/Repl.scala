@@ -39,8 +39,8 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
   def startModules() {
     import bibimbap.modules._
     modules = List(
-      context.actorOf(Props(new General(self, logger)), name = "General"),
-      context.actorOf(Props(new Search(self, logger)),  name = "Search")
+      context.actorOf(Props(new General(self, logger, settings)), name = "General"),
+      context.actorOf(Props(new Search(self, logger, settings)),  name = "Search")
     )
   }
 
