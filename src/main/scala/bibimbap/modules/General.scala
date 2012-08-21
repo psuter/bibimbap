@@ -9,10 +9,7 @@ class General(val repl: ActorRef, val logger: ActorRef) extends Module {
   def receive = {
     case Command(line) =>
       line match {
-        case Command1("exit") =>
-          repl ! Shutdown
-          sender ! CommandSuccess
-        case Command1("quit") =>
+        case Command1("exit") | Command1("quit")=>
           repl ! Shutdown
           sender ! CommandSuccess
         case _ =>
