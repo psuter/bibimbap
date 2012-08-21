@@ -32,7 +32,9 @@ class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Setting
       urlCon.setReadTimeout(3000)
       val content = Source.fromInputStream(urlCon.getInputStream)
       val text = content.getLines.mkString(" ")
-      // info("JSON : " + text)
+
+      logger ! Info("JSON : " + text)
+      return Nil
       extractJSONRecords(text).flatMap(recordToResult).toList
     } catch {
       case ce : ConnectException => {

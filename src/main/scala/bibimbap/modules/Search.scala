@@ -18,8 +18,8 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
   var lastSearch = List[SearchResult]()
 
   val searchModules = List(
-    context.actorOf(Props(new SearchLocal(repl, logger, settings)), name = "SearchLocal")
-    //context.actorOf(Props(new SearchDBLP(repl, logger, settings)),  name = "SearchDBLP")
+    context.actorOf(Props(new SearchLocal(repl, logger, settings)), name = "SearchLocal"),
+    context.actorOf(Props(new SearchDBLP(repl, logger, settings)),  name = "SearchDBLP")
   )
 
   def receive = {
