@@ -7,8 +7,7 @@ trait SearchModule extends Module {
 
   def receive = {
     case Search(terms) =>
-      search(terms)
-      sender ! Nil
+      sender ! search(terms)
     case Clear =>
       clear()
     case Store(results) =>

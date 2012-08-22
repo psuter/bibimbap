@@ -14,9 +14,7 @@ import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
-import com.codahale.jerkson.Json
-import com.codahale.jerkson.ParsingException
-import com.codahale.jerkson.AST._
+import json._
 
 class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends SearchModule {
   val name   = "Search DBLP"
@@ -33,8 +31,6 @@ class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Setting
       val content = Source.fromInputStream(urlCon.getInputStream)
       val text = content.getLines.mkString(" ")
 
-      logger ! Info("JSON : " + text)
-      return Nil
       extractJSONRecords(text).flatMap(recordToResult).toList
     } catch {
       case ce : ConnectException => {
@@ -56,18 +52,12 @@ class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Setting
   private val searchURLPostfix = "&h=10&c=4&f=0&format=json"
 
   private def extractJSONRecords(text : String) : Seq[JValue] = {
-    try {
-      (Json.parse[JValue](text) \\ "hit").flatMap(hit => hit match {
-        case JArray(elems) => elems
-        case single : JObject => Seq(single)
-        case _ => Nil
-      })
-    } catch {
-      case pe : ParsingException => {
-        logger ! Warning("Remote responded with malformed JSON (this is known to happen when there are no results).")
-        Nil
-      }
-    }
+    val jvalue = new JsonParser().parse(text)
+    (jvalue \\ "hit").flatMap(hit => hit match {
+      case JArray(elems) => elems
+      case single : JObject => Seq(single)
+      case _ => Nil
+    })
   }
 
   private val unknown : String = "???"

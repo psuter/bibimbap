@@ -31,8 +31,10 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
   }
 
   def search(args: List[String]) = {
-    val futures = searchModules.map(actor => (actor ? Search(args)).mapTo[SearchResult] recover {
-      case e: Throwable => Nil
+    val futures = searchModules.map(actor => (actor ? Search(args)).mapTo[SearchResults] recover {
+      case e: Throwable =>
+        logger ! Error(e.getMessage)
+        Nil
     })
 
     try {
