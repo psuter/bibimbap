@@ -19,6 +19,10 @@ class JsonParsing extends FunSuite with ShouldMatchers {
 
     parsesAs("""42""", JInt(42))
 
+    parsesAs(""" "xyz" """, JString("""xyz"""))
+
+    parsesAs(""" "xy\"z" """, JString("""xy"z"""))
+
     parsesAs("""[ 1, 2, 3 ]""", JArray(JInt(1) :: JInt(2) :: JInt(3) :: Nil))
 
     parsesAs("""{
