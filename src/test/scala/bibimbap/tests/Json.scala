@@ -34,5 +34,6 @@ class JsonParsing extends FunSuite with ShouldMatchers {
     val haystack = JObject(Map("fuu" -> stack1, "foo" -> stack0))
 
     (haystack \ "foo" \ "bar") should equal (needle)
+    (haystack \ "fuu" \ "foo" \ "bar") should equal (JNull)
   }
 }
