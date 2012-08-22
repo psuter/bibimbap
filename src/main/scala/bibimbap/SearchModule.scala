@@ -1,8 +1,9 @@
 package bibimbap
 
 import data._
+import akka.actor._
 
-trait SearchModule extends Module {
+trait SearchModule extends Actor {
   val source: String
 
   def receive = {

@@ -22,31 +22,25 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
     context.actorOf(Props(new SearchDBLP(repl, logger, settings)),  name = "SearchDBLP")
   )
 
-  def receive = {
-    case Command(Command1("clear")) =>
+  val handleCommand: Receive = {
+    case Command1("clear") =>
       dispatch(Clear)
-      sender ! CommandSuccess
-    case Command(CommandL("search", args)) =>
+    case CommandL("search", args) =>
       doSearch(args)
-      sender ! CommandSuccess
-    case Command(Command2("import", ind)) =>
+    case Command2("import", ind) =>
       getSearchResult(ind) match {
         case Some(sr) =>
           doImport(sr)
         case None =>
           logger ! Error("Invalid search result")
       }
-      sender ! CommandSuccess
-    case Command(Command2("show", ind)) =>
+    case Command2("show", ind) =>
       getSearchResult(ind) match {
         case Some(sr) =>
           doShow(sr)
         case None =>
           logger ! Error("Invalid search result")
       }
-      sender ! CommandSuccess
-    case _ =>
-      sender ! CommandUnknown
   }
 
   def dispatch(msg: Any) {
