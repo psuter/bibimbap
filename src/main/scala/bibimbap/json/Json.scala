@@ -4,7 +4,7 @@ import scala.util.parsing.combinator._
 
 class JsonParser extends JavaTokenParsers {
 
-  val IsInt = """-?\d+""".r
+  private val IsInt = """-?\d+""".r
 
   def value : Parser[JValue] = obj |
                              arr |
