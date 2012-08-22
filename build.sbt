@@ -21,6 +21,7 @@ scalacOptions += "-unchecked"
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= Seq(
+    "org.scalatest" % "scalatest_2.10.0-M6" % "1.9-2.10.0-M6-B2", // WTF..
     "jline" % "jline" % "0.9.94",
     "org.apache.lucene" % "lucene-core" % "3.6.0",
     "commons-io" % "commons-io" % "2.4",
