@@ -15,9 +15,9 @@ import data._
 class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends Module {
   val name = "Search"
 
-  var lastSearch = List[SearchResult]()
+  private var lastSearch = List[SearchResult]()
 
-  val searchModules = List(
+  private val searchModules = List(
     context.actorOf(Props(new SearchLocal(repl, logger, settings)), name = "SearchLocal"),
     context.actorOf(Props(new SearchDBLP(repl, logger, settings)),  name = "SearchDBLP")
   )
@@ -49,13 +49,13 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
       sender ! CommandUnknown
   }
 
-  def dispatch(msg: Any) {
+  private def dispatch(msg: Any) {
     for (m <- searchModules) {
       m ! msg
     }
   }
 
-  def doSearch(args: List[String]) = {
+  private def doSearch(args: List[String]) = {
     val futures = searchModules.map(actor => (actor ? Search(args)).mapTo[SearchResults] recover {
       case e: Throwable =>
         logger ! Error(e.getMessage)
@@ -76,7 +76,7 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
     }
   }
 
-  def doImport(res: SearchResult) {
+  private def doImport(res: SearchResult) {
     import java.io.{FileWriter,File}
 
     val fn = settings("general", "bib.filename")
@@ -101,11 +101,11 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
     logger ! Success("Imported: \\cite{"+res.entry.getKey+"}")
   }
 
-  def doShow(res: SearchResult) {
+  private def doShow(res: SearchResult) {
     logger ! Out(res.entry.toString)
   }
 
-  def getSearchResult(index: String): Option[SearchResult] = {
+  private def getSearchResult(index: String): Option[SearchResult] = {
     try {
       val i = index.toInt
       if (i < lastSearch.size && i >= 0) {
