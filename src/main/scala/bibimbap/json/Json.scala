@@ -29,6 +29,7 @@ class JsonParser extends JavaTokenParsers {
       case Success(x, _) => x
       case NoSuccess(err, next) =>
         println("failed to parse JSON input (line " + next.pos.line + ", column " + next.pos.column + ")")
+        println(content)
         JNull
     }
   }

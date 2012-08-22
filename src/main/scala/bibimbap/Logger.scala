@@ -31,13 +31,13 @@ class Logger(settings: Settings) extends Actor {
     case Out(msg: String) =>
       out(msg)
     case Info(msg: String) =>
-      out("    "+msg)
+      out("      "+msg)
     case Warning(msg: String) =>
-      out(Console.YELLOW + "[w]" + Console.RESET + " "+msg)
+      out(Console.YELLOW + "  [w]" + Console.RESET + " "+msg)
     case Error(msg: String) =>
-      out(Console.RED + "[!]" + Console.RESET + " "+msg)
+      out(Console.RED + "  [!]" + Console.RESET + " "+msg)
     case Success(msg: String) =>
-      out(Console.GREEN + "[\u2713]" + Console.RESET + " "+msg)
+      out(Console.GREEN + "  [\u2713]" + Console.RESET + " "+msg)
 
   }
 }

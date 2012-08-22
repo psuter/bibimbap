@@ -62,6 +62,7 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
       // messing with input
       Await.result(logger ? LoggerFlush, 1.seconds)
 
+      println()
       var line = reader.readLine(handle)
       logger ! LoggerContinue
 
