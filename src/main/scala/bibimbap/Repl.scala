@@ -9,9 +9,7 @@ import scala.concurrent.Future
 import scala.concurrent.util.duration._
 import scala.concurrent.ExecutionContext
 
-import jline.console.ConsoleReader
-import jline.console.completer.StringsCompleter
-import jline.console.history.FileHistory
+import jline._
 
 import java.io.File
 
@@ -30,7 +28,7 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
   override def preStart = {
     sayHello()
 
-    val history = new FileHistory(new File(historyFileName))
+    val history = new History(new File(historyFileName))
     reader.setHistory(history)
 
     startModules()

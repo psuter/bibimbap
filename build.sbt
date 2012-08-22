@@ -16,17 +16,15 @@ scalacOptions += "-unchecked"
 
 //fork := true
 
-javaOptions in (Test, run) += "-Djline.shutdownhook=false"
+//javaOptions in (Test, run) += "-Djline.shutdownhook=false"
 
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= Seq(
-//    "org.scalatest" %% "scalatest" % "1.8" % "test",
-    "jline" % "jline" % "2.7",
+    "jline" % "jline" % "0.9.94",
     "org.apache.lucene" % "lucene-core" % "3.6.0",
     "commons-io" % "commons-io" % "2.4",
     "org.apache.commons" % "commons-lang3" % "3.1",
-//    "com.codahale" % "jerkson_2.9.1" % "0.5.0",
     "com.typesafe.akka" % "akka-actor" % "2.1-M1"
 )
 
