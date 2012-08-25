@@ -28,5 +28,9 @@ case object LoggerContinue
 
 // Search related
 case class Search(terms: List[String])
-case object Clear
-case class Store(results: data.SearchResults)
+
+case class StoreResults(results: data.SearchResults)
+case class GetResults(index: String)
+case object ShowResults
+
+case class Dispatch(message: Any)

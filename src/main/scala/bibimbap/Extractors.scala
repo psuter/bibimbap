@@ -1,14 +1,14 @@
 package bibimbap
 
 abstract class ExCommand(val limit: Int) {
-  def unapplySeq(msg: String): Option[Seq[String]] = {
-    Some(msg.split("[:,. ]", limit).toList)
+  def unapplySeq(cmd: Command): Option[Seq[String]] = {
+    Some(cmd.line.split("[:,. ]", limit).toList)
   }
 }
 
 object CommandL {
-  def unapply(msg: String): Option[(String, List[String])] = {
-    val wrds = msg.split("[:,. ]", 0).toList
+  def unapply(cmd: Command): Option[(String, List[String])] = {
+    val wrds = cmd.line.split("[:,. ]", 0).toList
  
 
     if (wrds.size > 0) {

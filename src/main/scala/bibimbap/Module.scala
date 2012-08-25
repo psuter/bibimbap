@@ -11,27 +11,20 @@ trait Module extends Actor {
 
   val name: String
 
-  def handleCommand: Receive;
-
   def receive: Receive = {
-    case Command(Command2("help", command)) =>
+    case Command2("help", command) =>
       if (helpItems contains command) {
         helpItems(command).display(logger)
       }
       sender ! CommandSuccess
-    case Command(Command1("help")) =>
+    case Command1("help") =>
       for ((command, hi) <- helpItems) {
         helpItems(command).displayShort(logger)
       }
       sender ! CommandSuccess
 
-    case Command(cmd) =>
-      if (handleCommand isDefinedAt cmd) {
-        handleCommand(cmd)
-        sender ! CommandSuccess
-      } else {
-        sender ! CommandUnknown
-      }
+    case _ =>
+      sender ! CommandUnknown
   }
 
   implicit val timeout = Timeout(15.seconds)

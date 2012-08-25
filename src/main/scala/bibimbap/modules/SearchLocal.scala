@@ -35,7 +35,7 @@ class SearchLocal(val repl: ActorRef, val logger: ActorRef, val settings: Settin
     }
   }
 
-  override def clear() = {
+  def clear() = {
     import org.apache.commons.io.FileUtils
     import java.io.IOException
     try {
@@ -56,7 +56,7 @@ class SearchLocal(val repl: ActorRef, val logger: ActorRef, val settings: Settin
     idx
   }
 
-  override def store(results : SearchResults) {
+  def store(results : SearchResults) {
     for (res <- results if res.source != source) {
       addEntry(res.entry, res.link)
     }
