@@ -22,31 +22,25 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
     context.actorOf(Props(new SearchDBLP(repl, logger, settings)),  name = "SearchDBLP")
   )
 
-  def receive = {
-    case Command(Command1("clear")) =>
+  val handleCommand: Receive = {
+    case Command1("clear") =>
       dispatch(Clear)
-      sender ! CommandSuccess
-    case Command(CommandL("search", args)) =>
+    case CommandL("search", args) =>
       doSearch(args)
-      sender ! CommandSuccess
-    case Command(Command2("import", ind)) =>
+    case Command2("import", ind) =>
       getSearchResult(ind) match {
         case Some(sr) =>
           doImport(sr)
         case None =>
           logger ! Error("Invalid search result")
       }
-      sender ! CommandSuccess
-    case Command(Command2("show", ind)) =>
+    case Command2("show", ind) =>
       getSearchResult(ind) match {
         case Some(sr) =>
           doShow(sr)
         case None =>
           logger ! Error("Invalid search result")
       }
-      sender ! CommandSuccess
-    case _ =>
-      sender ! CommandUnknown
   }
 
   private def dispatch(msg: Any) {
@@ -134,4 +128,10 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
       logger ! Info("No match")
     }
   }
+
+  val helpItems = Map(
+    "search" -> HelpEntry("search <terms..>", "Searches for <terms> using the various search modules"),
+    "import" -> HelpEntry("import <result>",  "Imports the <result>th item from the last search results into managed.bib"),
+    "show"   -> HelpEntry("show <result>",    "Displays the bib entry for the <results>th search result.")
+  )
 }

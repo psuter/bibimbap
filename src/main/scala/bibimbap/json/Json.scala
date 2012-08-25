@@ -1,31 +1,49 @@
 package bibimbap.json
 
+import scala.util.parsing.json.Lexer
 import scala.util.parsing.combinator._
+import scala.util.parsing.combinator.syntactical._
+import scala.util.parsing.combinator.lexical._
 
-class JsonParser extends JavaTokenParsers {
+class JSONParser extends StdTokenParsers with ImplicitConversions {
+  // Fill in abstract defs
+  type Tokens = Lexer
+  val lexical = new Tokens
+
+  // Configure lexical parsing
+  lexical.reserved ++= List("true", "false", "null")
+  lexical.delimiters ++= List("{", "}", "[", "]", ":", ",")
+
+  /** Type signature for functions that can parse numeric literals */
+  type NumericParser = String => Any
+ 
+  // Define the grammar
+//  def root       = jsonObj | jsonArray
+  def jsonObj    = "{" ~> repsep(objEntry, ",") <~ "}" ^^ { case vals : List[_] => JObject(Map[String, JValue]() ++ vals) }
+  def objEntry   = stringVal ~ (":" ~> value) ^^ { case x ~ y => (x, y) }
+
+  def jsonArray  = "[" ~> repsep(value, ",") <~ "]" ^^ { case vals : List[_] => JArray(vals) }
+
+  def stringVal  = accept("string", { case lexical.StringLit(n) => n} )
 
   private val IsInt = """-?\d+""".r
 
-  def value : Parser[JValue] = obj |
-                             arr |
-                             stringLiteral ^^ {x => JString(x.substring(1, x.length-1)) } |
-                             floatingPointNumber ^^ { x => x match {
-                               case IsInt() => JInt(x.toInt)
-                               case _ => JDouble(x.toDouble)
-                             } } |
-                             "null" ^^^ JNull |
-                             "true" ^^^ JTrue |
-                             "false" ^^^ JFalse
+  def number     = accept("number", { 
+    case lexical.NumericLit(n) => n match {
+      case IsInt() => JInt(n.toInt)
+      case _       => JDouble(n.toDouble)
+  }})
 
-  def obj   : Parser[JObject] = "{"~>repsep(member, ",")<~"}" ^^ {xs: List[(String, JValue)] => JObject(Map[String, JValue]() ++ xs) }
-
-  def arr   : Parser[JArray] = "["~>repsep(value, ",")<~"]" ^^ { x => JArray(x) }
-
-  def member: Parser[(String, JValue)] = stringLiteral~":"~value ^^ { case key ~ _ ~ v => (key.substring(1, key.length-1), v) }
-
+  def value: Parser[JValue] = (jsonObj |
+                               jsonArray |
+                               number |
+                               "true" ^^^ JTrue |
+                               "false" ^^^ JFalse |
+                               "null" ^^^ JNull |
+                               stringVal ^^ { str => JString(str) })
 
   def parse(content: String): JValue = {
-    parseAll(value, content) match {
+    phrase(value)(new lexical.Scanner(content)) match {
       case Success(x, _) => x
       case NoSuccess(err, next) =>
         println("failed to parse JSON input (line " + next.pos.line + ", column " + next.pos.column + ")")

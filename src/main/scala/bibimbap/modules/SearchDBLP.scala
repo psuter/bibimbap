@@ -52,7 +52,7 @@ class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Setting
   private val searchURLPostfix = "&h=10&c=4&f=0&format=json"
 
   private def extractJSONRecords(text : String) : Seq[JValue] = {
-    val jvalue = new JsonParser().parse(text)
+    val jvalue = new JSONParser().parse(text)
     (jvalue \\ "hit").flatMap(hit => hit match {
       case JArray(elems) => elems
       case single : JObject => Seq(single)
