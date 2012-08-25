@@ -7,7 +7,7 @@ import org.scalatest.matchers.ShouldMatchers
 
 class JsonParsing extends FunSuite with ShouldMatchers {
   private def parsesAs(in : String, v : JValue) {
-    (new JsonParser).parse(in) should equal (v)
+    (new JSONParser).parse(in) should equal (v)
   }
 
   test("Base cases") {
