@@ -13,7 +13,9 @@ import scala.concurrent.ExecutionContext
 import data._
 
 class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends Module {
-  val name = "Search"
+  val name = "search"
+
+  override val dependsOn = Set("results")
 
   private val searchModules = List(
     context.actorOf(Props(new SearchLocal(repl, logger, settings)), name = "SearchLocal"),
@@ -23,8 +25,9 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
   override def receive: Receive = {
     case CommandL("search", args) =>
       doSearch(args)
-    case _ =>
-      super.receive
+      sender ! CommandSuccess
+    case x =>
+      super.receive(x)
   }
 
   private def doSearch(args: List[String]) = {
@@ -35,9 +38,10 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
     })
 
     try {
-      val resultsPerSearch = Await.result(Future.sequence(futures), 15.seconds)
+      val resultsPerSearch = Await.result(Future.sequence(futures), timeout.duration)
       val results = combineResults(resultsPerSearch)
 
+      syncSend(modules("results"), StoreResults(results))
     } catch {
       case e: TimeoutException =>
         logger ! Error("Failed to gather search results in time")

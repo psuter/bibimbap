@@ -13,12 +13,12 @@ import scala.concurrent.ExecutionContext
 import data._
 
 class ResultStore(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends Module {
-  val name = "Store"
+  val name = "results"
 
   private var results = List[SearchResult]()
 
   override def receive: Receive = {
-    case Command1("list") =>
+    case Command1("list") | Command1("show") =>
       displayResults()
       sender ! CommandSuccess
     case Command2("import", ind) =>
@@ -41,8 +41,14 @@ class ResultStore(val repl: ActorRef, val logger: ActorRef, val settings: Settin
           logger ! Error("Invalid search result")
       }
       sender ! CommandSuccess
-    case _ =>
-      super.receive
+
+    case StoreResults(newResults) =>
+      results = newResults
+      displayResults()
+
+      sender ! CommandSuccess
+    case x =>
+      super.receive(x)
   }
 
   private def getResults(index: String): Option[List[SearchResult]] = {

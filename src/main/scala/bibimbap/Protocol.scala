@@ -1,5 +1,8 @@
 package bibimbap
 
+import akka.actor.ActorRef
+
+case object Start
 case object ReadLine
 
 
@@ -14,7 +17,10 @@ case class Warning(msg: String) extends LogMsg;
 case class Info(msg: String) extends LogMsg;
 case class Success(msg: String) extends LogMsg;
 
-case class Command(line: String)
+trait Command
+case class InputCommand(line: String) extends Command
+case class OnStartup(modules: Map[String, ActorRef]) extends Command;
+case class OnShutdown() extends Command;
 
 abstract class CommandResult
 case class CommandError(msg: String) extends CommandResult
@@ -33,4 +39,3 @@ case class StoreResults(results: data.SearchResults)
 case class GetResults(index: String)
 case object ShowResults
 
-case class Dispatch(message: Any)

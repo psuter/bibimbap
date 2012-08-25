@@ -4,13 +4,14 @@ package modules
 import akka.actor._
 
 class General(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends Module {
-  val name = "General"
+  val name = "general"
 
   override def receive: Receive = {
     case Command1("exit") | Command1("quit") =>
       repl ! Shutdown
-    case _ =>
-      super.receive
+      sender ! CommandSuccess
+    case x =>
+      super.receive(x)
   }
 
   val helpItems = Map(

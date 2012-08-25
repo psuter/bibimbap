@@ -1,13 +1,13 @@
 package bibimbap
 
 abstract class ExCommand(val limit: Int) {
-  def unapplySeq(cmd: Command): Option[Seq[String]] = {
+  def unapplySeq(cmd: InputCommand): Option[Seq[String]] = {
     Some(cmd.line.split("[:,. ]", limit).toList)
   }
 }
 
 object CommandL {
-  def unapply(cmd: Command): Option[(String, List[String])] = {
+  def unapply(cmd: InputCommand): Option[(String, List[String])] = {
     val wrds = cmd.line.split("[:,. ]", 0).toList
  
 

@@ -23,7 +23,7 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
 
   val logger = context.actorOf(Props(new Logger(settings)), name = "Logger")
 
-  var modules = List[ActorRef]()
+  var modules = Map[String, ActorRef]()
 
   override def preStart = {
     sayHello()
@@ -36,25 +36,41 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
 
   def startModules() {
     import bibimbap.modules._
-    modules = List(
-      context.actorOf(Props(new General(self, logger, settings)), name = "General"),
-      context.actorOf(Props(new Search(self, logger, settings)),  name = "Search")
+
+    modules = Map(
+      "general" -> context.actorOf(Props(new General(self, logger, settings)),      name = "general"),
+      "search"  -> context.actorOf(Props(new Search(self, logger, settings)),       name = "search"),
+      "results" -> context.actorOf(Props(new ResultStore(self, logger, settings)),  name = "results")
     )
+
   }
 
-  def dispatchCommand(line: String): List[CommandResult] = {
-    val futures = modules.map(actor => (actor ? Command(line)).mapTo[CommandResult] recover {
+  def dispatchCommand(cmd: Command) {
+    val futures = modules.values.map(actor => (actor ? cmd).mapTo[CommandResult] recover {
       case e: Throwable => CommandException(e)
-    })
+    }).toList
 
     try {
-      Await.result(Future.sequence(futures), 21.seconds)
+      val responses = Await.result(Future.sequence(futures), timeout.duration) collect {
+        case CommandSuccess      => ()
+        case CommandException(e) => logger ! Error(e.getMessage)
+        case CommandError(msg)   => logger ! Error(msg)
+      }
+
+      if (responses.isEmpty) {
+        logger ! Error("Unknown command: "+cmd)
+      }
     } catch {
-      case e: java.util.concurrent.TimeoutException => List(CommandError("Timeout while waiting for command result"))
+      case e: java.util.concurrent.TimeoutException =>
+        logger ! Error("Timeout while waiting for command result")
     }
   }
 
   def receive = {
+    case Start =>
+      dispatchCommand(OnStartup(modules = modules))
+      self ! ReadLine
+
     case ReadLine =>
       // Flush message box of Logger and tore subsequent messages to avoid
       // messing with input
@@ -70,20 +86,13 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
       } else {
         line = line.trim
         if(line != "") {
-          val res = dispatchCommand(line).collect {
-            case CommandSuccess      => ()
-            case CommandException(e) => logger ! Error(e.getMessage)
-            case CommandError(msg)   => logger ! Error(msg)
-          }
-
-          if (res.isEmpty) {
-            logger ! Error("Unknown command: "+line)
-          }
+          dispatchCommand(InputCommand(line))
         }
       }
 
       self ! ReadLine
     case Shutdown =>
+      dispatchCommand(OnShutdown())
       logger ! Out("Bye.")
       sys.exit(0)
   }
