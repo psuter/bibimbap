@@ -11,19 +11,19 @@ trait Module extends Actor {
 
   val name: String
 
-  val keywords = List[String]()
-
   def handleCommand: Receive;
 
   def receive: Receive = {
     case Command(Command2("help", command)) =>
       if (helpItems contains command) {
-        sender ! Map(command -> helpItems(command))
-      } else {
-        sender ! Map[String, HelpEntry]()
+        helpItems(command).display(logger)
       }
+      sender ! CommandSuccess
     case Command(Command1("help")) =>
-      sender ! helpItems
+      for ((command, hi) <- helpItems) {
+        helpItems(command).displayShort(logger)
+      }
+      sender ! CommandSuccess
 
     case Command(cmd) =>
       if (handleCommand isDefinedAt cmd) {
@@ -36,5 +36,5 @@ trait Module extends Actor {
 
   implicit val timeout = Timeout(15.seconds)
 
-  val helpItems: Map[String, HelpEntry] = Map()
+  val helpItems: Map[String, HelpEntry];
 }

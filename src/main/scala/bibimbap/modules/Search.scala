@@ -128,4 +128,10 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
       logger ! Info("No match")
     }
   }
+
+  val helpItems = Map(
+    "search" -> HelpEntry("search <terms..>", "Searches for <terms> using the various search modules"),
+    "import" -> HelpEntry("import <result>",  "Imports the <result>th item from the last search results into managed.bib"),
+    "show"   -> HelpEntry("show <result>",    "Displays the bib entry for the <results>th search result.")
+  )
 }

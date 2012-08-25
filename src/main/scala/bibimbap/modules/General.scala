@@ -10,4 +10,9 @@ class General(val repl: ActorRef, val logger: ActorRef, val settings: Settings) 
     case Command1("exit") | Command1("quit") =>
       repl ! Shutdown
   }
+
+  val helpItems = Map(
+    "exit" -> HelpEntry("exit", "Exits bibimbap"),
+    "quit" -> HelpEntry("quit", "Exits bibimbap")
+  )
 }
