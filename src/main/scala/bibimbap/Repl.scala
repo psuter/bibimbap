@@ -81,7 +81,6 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
       logger ! LoggerContinue
 
       if(line == null) {
-        println("Unsupported Terminal")
         sys.exit(0)
       } else {
         line = line.trim
