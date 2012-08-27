@@ -1,5 +1,6 @@
 package bibimbap
 
+import scala.reflect.ClassTag
 import akka.actor._
 import akka.util.Timeout
 import akka.pattern.ask
@@ -8,7 +9,7 @@ import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 
-trait Module extends Actor {
+trait Module extends Actor with ActorHelpers {
   val settings: Settings
   val logger: ActorRef
   val repl: ActorRef
@@ -53,12 +54,6 @@ trait Module extends Actor {
       }
       repl ! Shutdown
     }
-  }
-
-  implicit val timeout = Timeout(15.seconds)
-
-  def syncSend(actor: ActorRef, cmd: Any) = {
-    Await.result((actor ? cmd), timeout.duration)
   }
 
   def shutdown(os: OnShutdown) {

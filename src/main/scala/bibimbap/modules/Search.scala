@@ -31,17 +31,11 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
   }
 
   private def doSearch(args: List[String]) = {
-    val futures = searchModules.map(actor => (actor ? Search(args)).mapTo[SearchResults] recover {
-      case e: Throwable =>
-        logger ! Error(e.getMessage)
-        Nil
-    })
-
     try {
-      val resultsPerSearch = Await.result(Future.sequence(futures), timeout.duration)
+      val resultsPerSearch = dispatchCommand[SearchResults](Search(args), searchModules)
       val results = combineResults(resultsPerSearch)
 
-      syncSend(modules("results"), StoreResults(results))
+      syncCommand(modules("results"), StoreResults(results))
     } catch {
       case e: TimeoutException =>
         logger ! Error("Failed to gather search results in time")

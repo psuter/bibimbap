@@ -21,13 +21,13 @@ trait Command
 case class InputCommand(line: String) extends Command
 case class OnStartup(modules: Map[String, ActorRef]) extends Command;
 case class OnShutdown() extends Command;
+case object Shutdown extends Command;
 
 abstract class CommandResult
 case class CommandError(msg: String) extends CommandResult
 case class CommandException(e: Throwable) extends CommandResult
 case object CommandSuccess extends CommandResult
 case object CommandUnknown extends CommandResult
-case object Shutdown extends CommandResult
 
 case object LoggerFlush
 case object LoggerContinue

@@ -1,5 +1,6 @@
 package bibimbap
 
+import scala.reflect.ClassTag
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
@@ -13,9 +14,7 @@ import jline._
 
 import java.io.File
 
-class Repl(homeDir: String, configFileName: String, historyFileName: String)  extends Actor {
-  implicit val timeout = Timeout(20.seconds)
-
+class Repl(homeDir: String, configFileName: String, historyFileName: String) extends Actor with ActorHelpers {
   val settings = (new ConfigFileParser(configFileName)).parse.getOrElse(DefaultSettings)
 
   val handle = "bibimbap> "
@@ -46,23 +45,30 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
   }
 
   def dispatchCommand(cmd: Command) {
-    val futures = modules.values.map(actor => (actor ? cmd).mapTo[CommandResult] recover {
-      case e: Throwable => CommandException(e)
-    }).toList
+    implicit val timeout = Timeout(365.day)
 
-    try {
-      val responses = Await.result(Future.sequence(futures), timeout.duration) collect {
-        case CommandSuccess      => ()
-        case CommandException(e) => logger ! Error(e.getMessage)
-        case CommandError(msg)   => logger ! Error(msg)
-      }
+    val results = dispatchCommand[CommandResult](cmd, modules.values.toList) 
 
-      if (responses.isEmpty) {
-        logger ! Error("Unknown command: "+cmd)
+    val isKnown = results exists {
+      case CommandSuccess  =>
+        true
+      case CommandException(e)    =>
+        logger ! Error(e.getMessage)
+        false
+      case CommandError(msg)      =>
+        logger ! Error(msg)
+        false
+      case _ =>
+        false
+    }
+
+    if (!isKnown && !results.isEmpty) {
+      cmd match {
+        case InputCommand(line) =>
+          logger ! Error("Unknown command: "+line)
+        case _ =>
+          logger ! Error("Unknown command type: "+cmd)
       }
-    } catch {
-      case e: java.util.concurrent.TimeoutException =>
-        logger ! Error("Timeout while waiting for command result")
     }
   }
 
