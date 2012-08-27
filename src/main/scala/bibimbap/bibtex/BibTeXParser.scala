@@ -12,7 +12,8 @@ import scala.io.Source
 //   - parse string constants, maintain environment
 //   - parse @COMMENT, etc.
 
-class BibTeXParser(src : Source) {
+class BibTeXParser(src : Source, error : String=>Unit) {
+  case class BibTeXParseError(msg : String) extends Exception(msg)
   private val lexer = new Lexer
   private case class RawEntry(kind : String, key : String, pairs : Map[String,String])
 
@@ -21,20 +22,40 @@ class BibTeXParser(src : Source) {
     BibTeXEntry.fromEntryMap(newMap.updated("type", MString.fromJava(raw.kind)))
   }
 
-  private def rawEntries : Stream[RawEntry] = {
+  private def rawEntries : Stream[RawEntry] = rawEntriesOpt.flatten
+
+  private def rawEntriesOpt : Stream[Option[RawEntry]] = {
     if(lastToken == EOF()) {
       Stream.empty
     } else {
-      Stream.cons(parseEntry, rawEntries)
+      Stream.cons(parseEntry, rawEntriesOpt)
     }
   }
 
-  private def parseError(msg : String) : Nothing = throw new Exception("Parse error : " + msg)
+  private def parseError(msg : String) : Nothing = {
+    throw new BibTeXParseError(msg)
+  }
+  private def tryOrSkipUntil[A](block : =>A)(eatUntil : Token=>Boolean) : Option[A] = {
+    try {
+      Some(block)
+    } catch {
+      case pe : BibTeXParseError => {
+        error(pe.getMessage)
+        while(!eatUntil(lastToken) && lastToken != EOF()) {
+          nextToken
+        }
+        None
+      }
+    }
+  }
 
   private var lastToken : Token = null
   private def nextToken : Token = {
     lastToken = lexer.nextToken 
-    lastToken 
+    lastToken match {
+      case ERROR(msg) => parseError(msg)
+      case good => good
+    } 
   }
 
   private def eat(tester : Token=>Boolean) : Unit = {
@@ -46,27 +67,31 @@ class BibTeXParser(src : Source) {
   } 
 
   private var firstTime : Boolean = true
-  private def parseEntry : RawEntry = {
+  private def parseEntry : Option[RawEntry] = {
     if(firstTime) {
       firstTime = false
       nextToken
     }
-    eat(_ == AT())
-    val kind = parseID.toLowerCase
-    eat(_ == BLOCKSTART())
-    val key = parseID
-    eat(_ == COMMA())
+    tryOrSkipUntil {
+      eat(_ == AT())
+      val kind = parseID.toLowerCase
+      eat(_ == BLOCKSTART())
+      val key = parseID
+      eat(_ == COMMA())
 
-    var pairs : List[(String,String)] = Nil
+      var pairs : List[(String,String)] = Nil
 
-    while(lastToken != BLOCKEND()) {
-      pairs = parsePair :: pairs
-      while(lastToken == COMMA()) {
-        nextToken
-      }
-    } 
-    eat(_ == BLOCKEND())
-    new RawEntry(kind, key, pairs.toMap)
+      while(lastToken != BLOCKEND()) {
+        val pairOpt = tryOrSkipUntil(parsePair)(t => t == COMMA() || t == BLOCKEND())
+        pairOpt.foreach(pair => pairs = pair :: pairs)
+
+        while(lastToken == COMMA()) {
+          nextToken
+        }
+      } 
+      eat(_ == BLOCKEND())
+      new RawEntry(kind, key, pairs.toMap)
+    }(_ == AT())
   }
 
   private def parseID : String = lastToken match {
@@ -105,25 +130,26 @@ class BibTeXParser(src : Source) {
 
   // Below is point is where the lexer sits.
 
-  private trait Token {
+  private sealed abstract class Token(rep : String) {
     private var pos : Int = -1
     def setPos(p : Int) : this.type = {
       pos = p
       this
     }
-    def position : Int = pos 
+    def position : Int = pos
+    override def toString : String = rep
   }
-  private case class EOF() extends Token
-  private case class AT() extends Token
-  private case class BLOCKSTART() extends Token
-  private case class BLOCKEND() extends Token
-  private case class COMMA() extends Token
-  private case class EQUALS() extends Token
-  private case class SHARP() extends Token
-  private case class ID(value : String) extends Token
-  private case class STRING(value : String) extends Token
-  private case class NUM(value : Int) extends Token
-  private case class ERROR(reason : String) extends Token
+  private case class EOF() extends Token("EOF")
+  private case class AT() extends Token("@")
+  private case class BLOCKSTART() extends Token("{")
+  private case class BLOCKEND() extends Token("}")
+  private case class COMMA() extends Token(",")
+  private case class EQUALS() extends Token("=")
+  private case class SHARP() extends Token("#")
+  private case class ID(value : String) extends Token("identifier[" + value + "]")
+  private case class STRING(value : String) extends Token("value")
+  private case class NUM(value : Int) extends Token("integer")
+  private case class ERROR(reason : String) extends Token("Error: " + reason)
 
   private class Lexer {
     private var lastChar : Char = _
