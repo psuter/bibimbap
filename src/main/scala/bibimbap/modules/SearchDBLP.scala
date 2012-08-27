@@ -21,7 +21,7 @@ class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Setting
   val source = "dblp "
 
   def search(terms: List[String]): SearchResults = {
-    try {
+    val results = try {
       val pattern = URLEncoder.encode(terms.mkString(" "), "UTF-8")
       val url = new URL(searchURLPrefix + pattern + searchURLPostfix)
       // info("DBLP query URL : [" + url + "].")
@@ -46,6 +46,8 @@ class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Setting
         Nil
       }
     }
+
+    SearchResults(results)
   }
 
   private val searchURLPrefix  = "http://www.dblp.org/search/api/?q="

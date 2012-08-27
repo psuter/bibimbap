@@ -4,7 +4,6 @@ import strings._
 
 package object data {
   case class SearchResult(entry : BibTeXEntry, link : Option[String], source : String)
-  type SearchResults = List[SearchResult]
 
   private[data] def forConsistency(msg : String)(expr : =>Boolean)(implicit entryType : BibTeXEntryTypes.BibTeXEntryType) {
     if(!expr) {

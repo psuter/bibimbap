@@ -29,9 +29,9 @@ class SearchLocal(val repl: ActorRef, val logger: ActorRef, val settings: Settin
   override def search(terms: List[String]): SearchResults = {
     val query = terms.mkString(" ").trim
     if(query.isEmpty) {
-      Nil
+      SearchResults(Nil)
     } else {
-      searchEntries(query).flatMap(documentToSearchResult).toList
+      SearchResults(searchEntries(query).flatMap(documentToSearchResult).toList)
     }
   }
 
@@ -57,7 +57,7 @@ class SearchLocal(val repl: ActorRef, val logger: ActorRef, val settings: Settin
   }
 
   def store(results : SearchResults) {
-    for (res <- results if res.source != source) {
+    for (res <- results.entries if res.source != source) {
       addEntry(res.entry, res.link)
     }
   }
