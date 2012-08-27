@@ -22,28 +22,46 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
     context.actorOf(Props(new SearchDBLP(repl, logger, settings)),  name = "SearchDBLP")
   )
 
+  lazy val resultsModule = modules("results")
+
   override def receive: Receive = {
     case CommandL("search", args) =>
-      doSearch(args)
+      val results = doSearch(args)
+
+      syncCommand(resultsModule, SearchResults(results))
+
       sender ! CommandSuccess
+
+    case ImportedResult(res) =>
+      for (m <- searchModules) {
+        m ! ImportedResult(res)
+      }
+
+    case Search(terms) =>
+      val results = doSearch(terms)
+      sender ! SearchResults(results)
+
+    case SearchOne(terms) =>
+      val results = doSearch(terms)
+      sender ! SearchResults(results.headOption.toList)
+
     case x =>
       super.receive(x)
   }
 
-  private def doSearch(args: List[String]) = {
+  private def doSearch(args: List[String]): List[SearchResult] = {
     try {
       val resultsPerSearch = dispatchCommand[SearchResults](Search(args), searchModules)
-      val results = combineResults(resultsPerSearch)
-
-      syncCommand(modules("results"), StoreResults(results))
+      combineResults(resultsPerSearch)
     } catch {
       case e: TimeoutException =>
         logger ! Error("Failed to gather search results in time")
+        Nil
     }
   }
 
-  private def combineResults(results : List[SearchResults]): SearchResults = {
-    results.flatten.groupBy(_.entry.getKey).values.map(_.head).toList
+  private def combineResults(resultss: List[SearchResults]): List[SearchResult]= {
+    resultss.flatMap(_.entries).groupBy(_.entry.getKey).values.map(_.head).toList
   }
 
   val helpItems = Map(

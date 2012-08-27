@@ -29,9 +29,9 @@ class SearchLocal(val repl: ActorRef, val logger: ActorRef, val settings: Settin
   override def search(terms: List[String]): SearchResults = {
     val query = terms.mkString(" ").trim
     if(query.isEmpty) {
-      Nil
+      SearchResults(Nil)
     } else {
-      searchEntries(query).flatMap(documentToSearchResult).toList
+      SearchResults(searchEntries(query).flatMap(documentToSearchResult).toList)
     }
   }
 
@@ -56,10 +56,8 @@ class SearchLocal(val repl: ActorRef, val logger: ActorRef, val settings: Settin
     idx
   }
 
-  def store(results : SearchResults) {
-    for (res <- results if res.source != source) {
-      addEntry(res.entry, res.link)
-    }
+  override def onImport(res: SearchResult) {
+    addEntry(res.entry, res.link)
   }
 
   private def searchEntries(query : String) : Iterable[Document] = {

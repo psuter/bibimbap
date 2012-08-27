@@ -42,11 +42,19 @@ class ResultStore(val repl: ActorRef, val logger: ActorRef, val settings: Settin
       }
       sender ! CommandSuccess
 
-    case StoreResults(newResults) =>
+    case SearchResults(newResults) =>
       results = newResults
       displayResults()
 
       sender ! CommandSuccess
+
+    case GetResults(index) =>
+      sender ! SearchResults(getResults(index).getOrElse(Nil))
+
+    case ShowResults =>
+      displayResults()
+      sender ! CommandSuccess
+
     case x =>
       super.receive(x)
   }
@@ -84,6 +92,9 @@ class ResultStore(val repl: ActorRef, val logger: ActorRef, val settings: Settin
       case e: java.awt.HeadlessException =>
         logger ! Warning("Could not store in clipboard: "+e.getMessage.trim)
     }
+
+    // Inform search module that we imported this
+    modules("search") ! ImportedResult(res)
 
     logger ! Success("Imported: \\cite{"+res.entry.getKey+"}")
   }
