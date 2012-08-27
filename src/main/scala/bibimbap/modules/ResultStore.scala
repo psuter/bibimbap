@@ -93,6 +93,9 @@ class ResultStore(val repl: ActorRef, val logger: ActorRef, val settings: Settin
         logger ! Warning("Could not store in clipboard: "+e.getMessage.trim)
     }
 
+    // Inform search module that we imported this
+    modules("search") ! ImportedResult(res)
+
     logger ! Success("Imported: \\cite{"+res.entry.getKey+"}")
   }
 

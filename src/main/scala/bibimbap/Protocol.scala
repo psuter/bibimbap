@@ -55,3 +55,7 @@ case class GetResults(index: String)
 // <= CommandSuccess
 case object ShowResults
 
+
+// => ImportedResult
+// ASYNC
+case class ImportedResult(res: data.SearchResult)

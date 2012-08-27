@@ -32,6 +32,11 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
 
       sender ! CommandSuccess
 
+    case ImportedResult(res) =>
+      for (m <- searchModules) {
+        m ! ImportedResult(res)
+      }
+
     case Search(terms) =>
       val results = doSearch(terms)
       sender ! SearchResults(results)
