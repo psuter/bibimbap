@@ -13,12 +13,12 @@ class BibTeXParsing extends FunSuite with ShouldMatchers {
     var errorCount : Int = 0
     def errorHandler(s : String) : Unit = {
       errorCount += 1
-      println(s)
+//      println(s)
     }
 
     val parser = new BibTeXParser(Source.fromString(str), errorHandler)
     val entries = parser.entries.toSeq
-    for(entry <- entries) println(entry)
+//    for(entry <- entries) println(entry)
     (entries, errorCount)
   }
 
