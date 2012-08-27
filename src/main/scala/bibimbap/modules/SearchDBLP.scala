@@ -20,7 +20,7 @@ class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Setting
   val name   = "Search DBLP"
   val source = "dblp "
 
-  override def doSearch(terms: List[String]): SearchResults = {
+  override def search(terms: List[String]): SearchResults = {
     val results = try {
       val pattern = URLEncoder.encode(terms.mkString(" "), "UTF-8")
       val url = new URL(searchURLPrefix + pattern + searchURLPostfix)

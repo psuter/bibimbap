@@ -8,15 +8,15 @@ trait SearchModule extends Actor {
 
   def receive = {
     case Search(terms) =>
-      sender ! doSearch(terms)
+      sender ! search(terms)
 
     case ImportedResult(res) =>
-      doImport(res)
+      onImport(res)
       // no message back
     case _ =>
   }
 
-  def doSearch(terms: List[String]): SearchResults
+  def search(terms: List[String]): SearchResults
 
-  def doImport(res: SearchResult) = {}
+  def onImport(res: SearchResult) = {}
 }

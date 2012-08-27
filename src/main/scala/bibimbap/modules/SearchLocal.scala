@@ -26,7 +26,7 @@ class SearchLocal(val repl: ActorRef, val logger: ActorRef, val settings: Settin
 
   private var index = initializeIndex()
 
-  override def doSearch(terms: List[String]): SearchResults = {
+  override def search(terms: List[String]): SearchResults = {
     val query = terms.mkString(" ").trim
     if(query.isEmpty) {
       SearchResults(Nil)
@@ -56,7 +56,7 @@ class SearchLocal(val repl: ActorRef, val logger: ActorRef, val settings: Settin
     idx
   }
 
-  override def doImport(res: SearchResult) {
+  override def onImport(res: SearchResult) {
     addEntry(res.entry, res.link)
   }
 
