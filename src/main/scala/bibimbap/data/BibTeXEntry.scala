@@ -69,11 +69,11 @@ trait BibTeXEntry extends Serializable {
     }
     add("address",      this.address)
     add("annote",       this.annote)
-    addSeq("authors",   this.authors)
+    addSeq("author",    this.authors)
     add("booktitle",    this.booktitle)
     add("chapter",      this.chapter.map(c => MString.fromJava(c.toString)))
     add("edition",      this.edition)
-    addSeq("editors",   this.editors)
+    addSeq("editor",    this.editors)
     add("eprint",       this.eprint)
     add("howpublished", this.howpublished)
     add("institution",  this.institution)
@@ -112,7 +112,7 @@ object BibTeXEntry {
 
     map.get("type").flatMap(_.toJava match {
       case "article" => for(
-        a <- Some(getSeq("authors")) if !a.isEmpty;
+        a <- Some(getSeq("author")) if !a.isEmpty;
         t <- get("title");
         j <- get("journal");
         y <- getInt("year")) yield {
@@ -127,12 +127,12 @@ object BibTeXEntry {
       }
 
       case "inproceedings" => for(
-        a <- Some(getSeq("authors")) if !a.isEmpty;
+        a <- Some(getSeq("author")) if !a.isEmpty;
         t <- get("title");
         b <- get("booktitle");
         y <- getInt("year")) yield {
         new InProceedings(a, t, b, y,
-          editors = getSeq("editors"),
+          editors = getSeq("editor"),
           series = get("series"),
           pages = get("pages"),
           organization = get("organization"),
