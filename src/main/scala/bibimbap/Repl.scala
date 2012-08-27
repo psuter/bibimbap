@@ -1,5 +1,6 @@
 package bibimbap
 
+import scala.reflect.ClassTag
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
@@ -13,9 +14,7 @@ import jline._
 
 import java.io.File
 
-class Repl(homeDir: String, configFileName: String, historyFileName: String)  extends Actor {
-  implicit val timeout = Timeout(20.seconds)
-
+class Repl(homeDir: String, configFileName: String, historyFileName: String) extends Actor with ActorHelpers {
   val settings = (new ConfigFileParser(configFileName)).parse.getOrElse(DefaultSettings)
 
   val handle = "bibimbap> "
@@ -23,7 +22,7 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
 
   val logger = context.actorOf(Props(new Logger(settings)), name = "Logger")
 
-  var modules = List[ActorRef]()
+  var modules = Map[String, ActorRef]()
 
   override def preStart = {
     sayHello()
@@ -36,25 +35,48 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
 
   def startModules() {
     import bibimbap.modules._
-    modules = List(
-      context.actorOf(Props(new General(self, logger, settings)), name = "General"),
-      context.actorOf(Props(new Search(self, logger, settings)),  name = "Search")
+
+    modules = Map(
+      "general" -> context.actorOf(Props(new General(self, logger, settings)),      name = "general"),
+      "search"  -> context.actorOf(Props(new Search(self, logger, settings)),       name = "search"),
+      "results" -> context.actorOf(Props(new ResultStore(self, logger, settings)),  name = "results")
     )
+
   }
 
-  def dispatchCommand(line: String): List[CommandResult] = {
-    val futures = modules.map(actor => (actor ? Command(line)).mapTo[CommandResult] recover {
-      case e: Throwable => CommandException(e)
-    })
+  def dispatchCommand(cmd: Command) {
+    implicit val timeout = Timeout(365.day)
 
-    try {
-      Await.result(Future.sequence(futures), 21.seconds)
-    } catch {
-      case e: java.util.concurrent.TimeoutException => List(CommandError("Timeout while waiting for command result"))
+    val results = dispatchCommand[CommandResult](cmd, modules.values.toList) 
+
+    val isKnown = results exists {
+      case CommandSuccess  =>
+        true
+      case CommandException(e)    =>
+        logger ! Error(e.getMessage)
+        false
+      case CommandError(msg)      =>
+        logger ! Error(msg)
+        false
+      case _ =>
+        false
+    }
+
+    if (!isKnown && !results.isEmpty) {
+      cmd match {
+        case InputCommand(line) =>
+          logger ! Error("Unknown command: "+line)
+        case _ =>
+          logger ! Error("Unknown command type: "+cmd)
+      }
     }
   }
 
   def receive = {
+    case Start =>
+      dispatchCommand(OnStartup(modules = modules))
+      self ! ReadLine
+
     case ReadLine =>
       // Flush message box of Logger and tore subsequent messages to avoid
       // messing with input
@@ -65,25 +87,17 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String)  ex
       logger ! LoggerContinue
 
       if(line == null) {
-        println("Unsupported Terminal")
         sys.exit(0)
       } else {
         line = line.trim
         if(line != "") {
-          val res = dispatchCommand(line).collect {
-            case CommandSuccess      => ()
-            case CommandException(e) => logger ! Error(e.getMessage)
-            case CommandError(msg)   => logger ! Error(msg)
-          }
-
-          if (res.isEmpty) {
-            logger ! Error("Unknown command: "+line)
-          }
+          dispatchCommand(InputCommand(line))
         }
       }
 
       self ! ReadLine
     case Shutdown =>
+      dispatchCommand(OnShutdown())
       logger ! Out("Bye.")
       sys.exit(0)
   }
