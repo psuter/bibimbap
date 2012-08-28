@@ -59,17 +59,27 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
       super.receive(x)
   }
 
+  private val Range  = """(\d+)-(\d+)""".r
+  private val Single = """(\d+)""".r
   private def getResults(index: String): Option[List[SearchResult]] = {
-    try {
-      val i = index.toInt
-      if (i < results.size && i >= 0) {
-        Some(List(results(i)))
-      } else {
-        None
-      }
-    } catch {
-      case _: Throwable =>
-        None
+    index match {
+      case "*" =>
+        Some(results)
+      case Range(lower, upper) =>
+        var l = lower.toInt
+        val u = upper.toInt
+        if (l <= u && l >= 0 && u < results.size) {
+          Some(results.drop(l).take(u-l+1))
+        } else {
+          None
+        }
+      case Single(index) =>
+        val i = index.toInt
+        if (i < results.size && i >= 0) {
+          Some(List(results(i)))
+        } else {
+          None
+        }
     }
   }
 

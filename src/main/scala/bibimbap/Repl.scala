@@ -72,21 +72,21 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
 
       syncMessage[LineRead](console, ReadLine) match {
         case Some(EOF) =>
+          // TODO: find a better way to exit
           sys.exit(0)
         case Some(LineRead(line)) =>
           val cmd = line.trim
           if(cmd != "") {
             dispatchCommand(InputCommand(cmd))
           }
-        case None =>
-          // TODO: find a better way to exit
-          sys.exit(0)
+        case _ =>
       }
 
       self ! ReadLine
     case Shutdown =>
       dispatchCommand(OnShutdown())
       console ! Out("Bye.")
+      // TODO: find a better way to exit
       sys.exit(0)
   }
 
