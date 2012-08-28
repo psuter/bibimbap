@@ -53,6 +53,9 @@ case class GetResults(index: String)
 // <= CommandSuccess
 case object ShowResults
 
+// => ReplaceResults(index, results)
+// <= CommandSuccess
+case class ReplaceResults(index: String, entries: List[data.SearchResult])
 
 // => ImportedResult
 // ASYNC

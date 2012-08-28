@@ -2,14 +2,6 @@ package bibimbap
 package modules
 
 import akka.actor._
-import akka.pattern.ask
-import akka.util.Timeout
-import java.util.concurrent.{Executors, TimeoutException}
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.util.duration._
-import scala.concurrent.ExecutionContext
-
 import data._
 
 class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends Module {
@@ -48,6 +40,15 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
       sender ! CommandSuccess
 
+    case ReplaceResults(ind, newResults) =>
+      getResults(ind) match {
+        case Some(rs) =>
+          results = results.map((rs zip newResults).toMap.orElse{ case x => x })
+        case None =>
+          console ! Error("Invalid search result")
+      }
+      sender ! CommandSuccess
+
     case GetResults(index) =>
       sender ! SearchResults(getResults(index).getOrElse(Nil))
 
@@ -66,10 +67,10 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
       case "*" =>
         Some(results)
       case Range(lower, upper) =>
-        var l = lower.toInt
+        val l = lower.toInt
         val u = upper.toInt
         if (l <= u && l >= 0 && u < results.size) {
-          Some(results.drop(l).take(u-l+1))
+          Some(results.slice(l, u + 1))
         } else {
           None
         }

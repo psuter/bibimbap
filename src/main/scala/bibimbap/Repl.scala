@@ -29,7 +29,8 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
     modules = Map(
       "general" -> context.actorOf(Props(new General(self, console, settings)),      name = "general"),
       "search"  -> context.actorOf(Props(new Search(self, console, settings)),       name = "search"),
-      "results" -> context.actorOf(Props(new ResultStore(self, console, settings)),  name = "results")
+      "results" -> context.actorOf(Props(new ResultStore(self, console, settings)),  name = "results"),
+      "wizard"  -> context.actorOf(Props(new Wizard(self, console, settings)),       name = "wizard")
     )
 
   }

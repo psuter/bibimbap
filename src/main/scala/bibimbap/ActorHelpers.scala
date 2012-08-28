@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext
 trait ActorHelpers extends Actor {
   val fastTimeout: Timeout = Timeout(5.seconds)
   val neverTimeout: Timeout = Timeout(365.days)
-  implicit val timeout: Timeout = fastTimeout
+  implicit val timeout: Timeout = neverTimeout
 
   val console: ActorRef
 

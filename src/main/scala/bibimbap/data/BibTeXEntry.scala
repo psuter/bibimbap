@@ -57,14 +57,17 @@ trait BibTeXEntry extends Serializable {
 
   def inlineString = entryToInline(this)
 
-  lazy val entryMap : Map[String,MString] = {
-    var base = Map("type" -> MString.fromJava(entryType.toString))
+  lazy val entryOptMap : Map[String, Option[MString]] = {
+    var base: Map[String, Option[MString]] = Map("type" -> Some(MString.fromJava(entryType.toString)))
+
     def add(name : String, f : Option[MString]) {
-      f.foreach(ms => base = base + (name -> ms))
+      base += name -> f
     }
     def addSeq(name : String, seq : Seq[MString]) {
       if(!seq.isEmpty) {
-        base = base + (name -> MString.fromJava(seq.map(_.toJava).mkString(" and ")))
+        base += name -> Some(MString.fromJava(seq.map(_.toJava).mkString(" and ")))
+      } else {
+        base += name -> None
       }
     }
     add("address",      this.address)
@@ -95,9 +98,18 @@ trait BibTeXEntry extends Serializable {
 
     base
   }
+
+  lazy val entryMap : Map[String,MString] = {
+    entryOptMap.filterNot(_._2.isEmpty).mapValues(_.get)
+  }
 }
 
 object BibTeXEntry {
+  def fromOptEntryMap(map : Map[String, Option[MString]]) : Option[BibTeXEntry] = {
+    fromEntryMap(map.filterNot(_._2.isEmpty).mapValues(_.get))
+  }
+
+
   def fromEntryMap(map : Map[String,MString]) : Option[BibTeXEntry] = {
     def get(key : String) : Option[MString] = map.get(key)
     def getInt(key : String) : Option[Int] = map.get(key).flatMap(_.toIntOpt)
