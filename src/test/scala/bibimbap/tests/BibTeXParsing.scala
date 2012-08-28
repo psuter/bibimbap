@@ -19,16 +19,16 @@ class BibTeXParsing extends FunSuite with ShouldMatchers {
 
   test("Two valid entries") {
     val src = """
-This is a dummy BibTeX file.
-
-@inproceedings{Thor2012OnEntries,
-  title  = "On " # "BibTeX {"}Entries{"}",
-  author = {Alfred U. Thor},
-  year   = 2012,
-  booktitle = {{BIG}CONF}
-} @article{ ThisKeyIsDroppedByBibimbap ,
-  title={All {CAPS}, A Keyboard Memoir},
-  author = "Quentin Werty", year=1976, journal="Keystroke Prenvention" }
+      This is a dummy BibTeX file.
+      
+      @inproceedings{Thor2012OnEntries,
+        title  = "On " # "BibTeX {"}Entries{"}",
+        author = {Alfred U. Thor},
+        year   = 2012,
+        booktitle = {{BIG}CONF}
+      } @article{ ThisKeyIsDroppedByBibimbap ,
+        title={All {CAPS}, A Keyboard Memoir},
+        author = "Quentin Werty", year=1976, journal="Keystroke Prenvention" }
     """
     
     val (entries, errors) = entriesAndErrors(src)
@@ -38,17 +38,32 @@ This is a dummy BibTeX file.
 
   test("One valid entry with one broken field") {
     val src = """
-@misc{ThreeGuys1291OnTheMountain,
-  author = {Werner Stauffacher and Walter F{\"u}rst and Arnold of Melchtal},
-  title  = "R{\"u}tlischwur",
-  year   = 2012,
-  field  = "Broken String}", 
-} 
+      @misc{ThreeGuys1291OnTheMountain,
+        author = {Werner Stauffacher and Walter F{\"u}rst and Arnold of Melchtal},
+        title  = "R{\"u}tlischwur",
+        year   = 2012,
+        field  = "Broken String}", 
+      } 
     """
     
     val (entries, errors) = entriesAndErrors(src)
     entries.size should equal (1)
     errors should equal (1)
   }
-  
+
+  test("Graceful crash on unterminated string.") {
+    val src = """
+      @misc{SomeEntry,
+        author = {John Doe and Jane Doe},
+        title  = {On Anonymity},
+        annote = "Unterminated string
+      }
+      
+      @Comment{ la la la la la }
+    """
+
+    val (entries, errors) = entriesAndErrors(src)
+    entries.size should equal (0)
+    errors should equal (2)
+  }
 }

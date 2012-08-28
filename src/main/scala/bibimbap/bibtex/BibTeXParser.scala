@@ -33,18 +33,16 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     "(" + Position.line(position) + ":" + Position.column(position) + ")"
   }
 
-  def entries : Stream[BibTeXEntry] = rawEntries.flatMap { raw =>
+  def entries : Stream[BibTeXEntry] = rawEntries.flatten.flatMap { raw =>
     val newMap : Map[String,MString] = raw.pairs.mapValues(s => MString.fromJava(s))
     BibTeXEntry.fromEntryMap(newMap.updated("type", MString.fromJava(raw.kind)))
   }
 
-  private def rawEntries : Stream[RawEntry] = rawEntriesOpt.flatten
-
-  private def rawEntriesOpt : Stream[Option[RawEntry]] = {
+  private def rawEntries : Stream[Option[RawEntry]] = {
     if(lastToken == EOF()) {
       Stream.empty
     } else {
-      Stream.cons(parseEntry, rawEntriesOpt)
+      Stream.cons(parseEntry, rawEntries)
     }
   }
 
@@ -92,7 +90,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
       parseID.toLowerCase
     }(_ == AT())
 
-    kind.flatMap { _ match {
+    val result = kind.flatMap { _ match {
       case "preamble" => while(lastToken != AT()) { nextToken }; None
       case "comment"  => while(lastToken != AT()) { nextToken }; None
 
@@ -103,7 +101,6 @@ class BibTeXParser(src : Source, error : String=>Unit) {
           eat(_ == EQUALS())
           val value = parseString
           eat(_ == BLOCKEND())
-          // Console.println("Storing : " + key + " --> " + value)
           constantMap(key.toLowerCase) = value
         }(_ == AT())
         None
@@ -116,7 +113,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
 
         var pairs : List[(String,String)] = Nil
 
-        while(lastToken != BLOCKEND()) {
+        while(lastToken != BLOCKEND() && lastToken != EOF()) {
           val pairOpt = tryOrSkipUntil(parsePair)(t => t == COMMA() || t == BLOCKEND())
           pairOpt.foreach(pair => pairs = pair :: pairs)
 
@@ -128,6 +125,9 @@ class BibTeXParser(src : Source, error : String=>Unit) {
         new RawEntry(otherKind, key, pairs.toMap)
       }(_ == AT())
     }}
+
+    // result.foreach(println)
+    result
   }
 
   private def parseID : String = lastToken match {
@@ -310,8 +310,6 @@ class BibTeXParser(src : Source, error : String=>Unit) {
                 }
               }
               if(lastChar == '\n') {
-                // Apparently it's common enough that we should just accept it.
-                // if(matching == '"') { error("Line break in \"...\" string. " + posString(src.pos)) }
                 lastChar = ' '
               }
               builder.append(lastChar)
