@@ -5,6 +5,9 @@ import bibimbap.data._
 import bibimbap.strings._
 
 import scala.io.Source
+import scala.io.Position
+
+import scala.collection.mutable.{Map=>MutableMap}
 
 // Still TODO :
 //   - make parser completely error-resilient.
@@ -16,6 +19,25 @@ class BibTeXParser(src : Source, error : String=>Unit) {
   case class BibTeXParseError(msg : String) extends Exception(msg)
   private val lexer = new Lexer
   private case class RawEntry(kind : String, key : String, pairs : Map[String,String])
+
+  private val constantMap : MutableMap[String,String] = MutableMap(
+    "jan" -> "January",
+    "feb" -> "February",
+    "mar" -> "March",
+    "apr" -> "April",
+    "may" -> "May",
+    "jun" -> "June",
+    "jul" -> "July",
+    "aug" -> "August",
+    "sep" -> "September",
+    "oct" -> "October",
+    "nov" -> "November",
+    "dec" -> "December"
+  )
+
+  private def posString(position : Int) : String = {
+    "(" + Position.line(position) + ":" + Position.column(position) + ")"
+  }
 
   def entries : Stream[BibTeXEntry] = rawEntries.flatMap { raw =>
     val newMap : Map[String,MString] = raw.pairs.mapValues(s => MString.fromJava(s))
@@ -32,9 +54,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     }
   }
 
-  private def parseError(msg : String) : Nothing = {
-    throw new BibTeXParseError(msg)
-  }
+  private def parseError(msg : String, token : Token) : Nothing = throw new BibTeXParseError(msg + " " + posString(token.position))
   private def tryOrSkipUntil[A](block : =>A)(eatUntil : Token=>Boolean) : Option[A] = {
     try {
       Some(block)
@@ -53,7 +73,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
   private def nextToken : Token = {
     lastToken = lexer.nextToken
     lastToken match {
-      case ERROR(msg) => parseError(msg)
+      case e @ ERROR(msg) => parseError(msg, e)
       case good => good
     }
   }
@@ -62,7 +82,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     if(tester(lastToken)) {
       nextToken
     } else {
-      parseError("Unexpected token : " + lastToken)
+      parseError("Unexpected token : " + lastToken, lastToken)
     }
   }
 
@@ -72,31 +92,53 @@ class BibTeXParser(src : Source, error : String=>Unit) {
       firstTime = false
       nextToken
     }
-    tryOrSkipUntil {
+
+    val kind = tryOrSkipUntil {
       eat(_ == AT())
-      val kind = parseID.toLowerCase
-      eat(_ == BLOCKSTART())
-      val key = parseID
-      eat(_ == COMMA())
-
-      var pairs : List[(String,String)] = Nil
-
-      while(lastToken != BLOCKEND()) {
-        val pairOpt = tryOrSkipUntil(parsePair)(t => t == COMMA() || t == BLOCKEND())
-        pairOpt.foreach(pair => pairs = pair :: pairs)
-
-        while(lastToken == COMMA()) {
-          nextToken
-        }
-      }
-      eat(_ == BLOCKEND())
-      new RawEntry(kind, key, pairs.toMap)
+      parseID.toLowerCase
     }(_ == AT())
+
+    kind.flatMap { _ match {
+      case "preamble" => while(lastToken != AT()) { nextToken }; None
+      case "comment"  => while(lastToken != AT()) { nextToken }; None
+
+      case "string"   => {
+        tryOrSkipUntil {
+          eat(_ == BLOCKSTART())
+          val key = parseID
+          eat(_ == EQUALS())
+          val value = parseString
+          eat(_ == BLOCKEND())
+          // Console.println("Storing : " + key + " --> " + value)
+          constantMap(key.toLowerCase) = value
+        }(_ == AT())
+        None
+      }
+
+      case otherKind => tryOrSkipUntil {      
+        eat(_ == BLOCKSTART())
+        val key = parseID
+        eat(_ == COMMA())
+
+        var pairs : List[(String,String)] = Nil
+
+        while(lastToken != BLOCKEND()) {
+          val pairOpt = tryOrSkipUntil(parsePair)(t => t == COMMA() || t == BLOCKEND())
+          pairOpt.foreach(pair => pairs = pair :: pairs)
+
+          while(lastToken == COMMA()) {
+            nextToken
+          }
+        }
+        eat(_ == BLOCKEND())
+        new RawEntry(otherKind, key, pairs.toMap)
+      }(_ == AT())
+    }}
   }
 
   private def parseID : String = lastToken match {
     case ID(value) => nextToken; value
-    case _ => parseError("Expected : identifier")
+    case _ => parseError("Expected : identifier", lastToken)
   }
 
   private def parseString : String = {
@@ -117,7 +159,15 @@ class BibTeXParser(src : Source, error : String=>Unit) {
   private def parseSingleString : String = lastToken match {
     case STRING(value) => nextToken; value
     case NUM(value) => nextToken; value.toString
-    case _ => parseError("Expected : value, found : " + lastToken)
+    case ID(value) => {
+      val subst = constantMap.get(value.toLowerCase) match {
+        case Some(v) => v
+        case None => error("Constant string " + value + " is undefined. " + posString(lastToken.position)); ""
+      }
+      nextToken
+      subst 
+    }
+    case _ => parseError("Expected : value, found : " + lastToken, lastToken)
   }
 
 
@@ -244,7 +294,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
             case '"' => '"'
           }
 
-          var error : Option[String] = None
+          var errorMsg : Option[String] = None
 
           // to track opening braces
           var openCount : Int = 0
@@ -252,24 +302,29 @@ class BibTeXParser(src : Source, error : String=>Unit) {
           builder.setLength(0)
           nextChar
 
-          while(!(openCount == 0 && lastChar == matching) && error.isEmpty) {
-            if(lastChar == '\n' || lastChar == EndOfFile) {
-              error = Some("Unterminated or linebreak in string.")
+          while(!(openCount == 0 && lastChar == matching) && errorMsg.isEmpty) {
+            if(lastChar == EndOfFile) {
+              errorMsg = Some("Unterminated string.")
             } else {
               if(lastChar == '{') {
                 openCount += 1
               } else if(lastChar == '}') {
                 openCount -= 1
                 if(openCount < 0) {
-                  error = Some("Unmatched } in string.")
+                  errorMsg = Some("Unmatched } in string.")
                 }
+              }
+              if(lastChar == '\n') {
+                // this is really just a warning.
+                if(matching == '"') { error("Line break in \"...\" string. " + posString(src.pos)) }
+                lastChar = ' '
               }
               builder.append(lastChar)
               nextChar
             }
           }
           nextChar
-          (error.map(e => ERROR(e)).getOrElse {
+          (errorMsg.map(e => ERROR(e)).getOrElse {
             if(openCount > 0) {
               ERROR("Unclosed { in string.")
             } else {
