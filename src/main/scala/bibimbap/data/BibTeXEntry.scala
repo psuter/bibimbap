@@ -99,11 +99,10 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
     Map("type" -> MString.fromJava(tpe.toString)) ++ fields ++ seqFields.mapValues(seq => MString.fromJava(seq.map(_.toJava).mkString(" and ")))
   }
 
-  def checkConsistency() {
+  def isValid: Boolean = {
     val missingReqFields = requiredFields -- fields.keySet -- seqFields.keySet
-    if (!missingReqFields.isEmpty) {
-      throw new InconsistentBibTeXEntry("Bibtex entry of type "+tpe+" requires fields "+missingReqFields.mkString(", "))
-    }
+
+    missingReqFields.isEmpty
   }
 
   def getKey: String = {
@@ -239,12 +238,10 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 
     buffer.dropRight(2).append("\n}").toString
   }
-
-  checkConsistency()
 }
 
 object BibTeXEntry {
-  def fromEntryMap(map : Map[String,MString]) : Option[BibTeXEntry] = {
+  def fromEntryMap(map : Map[String,MString], onError: String => Unit) : Option[BibTeXEntry] = {
     try {
       val tpe            = BibTeXEntryTypes.withName(map.get("type").map(_.toJava).getOrElse(throw new InconsistentBibTeXEntry("Missing type information")))
 
@@ -264,6 +261,7 @@ object BibTeXEntry {
       Some(BibTeXEntry(tpe, fields, seqFields))
     } catch {
       case InconsistentBibTeXEntry(msg) =>
+        onError(msg)
         None
     }
   }

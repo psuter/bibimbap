@@ -109,9 +109,9 @@ class SearchLocal(val repl: ActorRef, val console: ActorRef, val settings: Setti
       (f.name -> MString.fromJava(f.stringValue))
     ).toMap
 
-    for(entry <- BibTeXEntry.fromEntryMap(em)) yield {
+    for(entry <- BibTeXEntry.fromEntryMap(em, console ! Error(_))) yield {
       val url = Option(document.get("url"))
-      SearchResult(entry, url, source)
+      SearchResult(entry, url, Set(source))
     }
   }
 

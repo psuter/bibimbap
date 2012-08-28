@@ -86,7 +86,7 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
       console ! Success("Edit cancelled!")
       res
     } else {
-      BibTeXEntry.fromEntryMap(map) match {
+      BibTeXEntry.fromEntryMap(map, console ! Error(_)) match {
         case Some(entry) =>
           console ! Success("Entry edited!")
           res.copy(entry = entry)

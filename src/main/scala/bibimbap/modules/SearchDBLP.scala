@@ -122,9 +122,9 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
                 "venue"     -> venue.map(MString.fromJava).getOrElse(unknown),
                 "year"      -> yr2yr(venueYear).getOrElse(year.getOrElse(unknown)),
                 "pages"     -> pages.map(MString.fromJava).getOrElse(unknown)
-            ))
+            ), console ! Error(_))
 
-            entry.map(SearchResult(_, link, "DBLP"))
+            entry.map(SearchResult(_, link, Set(source)))
           }
 
           case JString("article") => {
@@ -159,7 +159,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
                 map += "pages" -> MString.fromJava(pgs.get)
               }
 
-              BibTeXEntry.fromEntryMap(map).map(SearchResult(_, link, "DBLP"))
+              BibTeXEntry.fromEntryMap(map, console ! Error(_)).map(SearchResult(_, link, Set(source)))
             }
           }
 
