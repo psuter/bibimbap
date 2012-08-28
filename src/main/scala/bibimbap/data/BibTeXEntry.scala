@@ -19,11 +19,19 @@ object BibTeXEntryTypes extends Enumeration {
   val TechReport =    Value("techreport")
   val Unpublished =   Value("unpublished")
 
-  val requiredFieldsFor = Map[BibTeXEntryType, Set[String]](
+  case class OneOf(fs: String*) {
+    val set = fs.toSet
+    def satisfiedBy(fields: Set[String]): Boolean = (set -- fields).isEmpty
+  }
+
+  import language.implicitConversions
+  implicit def strToOneOf(str: String) = OneOf(str)
+
+  val requiredFieldsFor = Map[BibTeXEntryType, Set[OneOf]](
     Article         -> Set("authors", "title", "journal", "year"),
-    Book            -> Set("authors", "editors", "title", "publisher", "year"),
+    Book            -> Set(OneOf("authors", "editors"), "title", "publisher", "year"),
     Booklet         -> Set("title"),
-    InBook          -> Set("authors", "editors", "title", "chapter", "pages", "publisher", "year"),
+    InBook          -> Set(OneOf("authors", "editors"), "title", OneOf("chapter", "pages"), "publisher", "year"),
     InCollection    -> Set("authors", "title", "booktitle", "year"),
     InProceedings   -> Set("authors", "title", "booktitle", "year"),
     Manual          -> Set("title"),
@@ -99,11 +107,11 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
     Map("type" -> MString.fromJava(tpe.toString)) ++ fields ++ seqFields.mapValues(seq => MString.fromJava(seq.map(_.toJava).mkString(" and ")))
   }
 
-  def checkConsistency() {
-    val missingReqFields = requiredFields -- fields.keySet -- seqFields.keySet
-    if (!missingReqFields.isEmpty) {
-      throw new InconsistentBibTeXEntry("Bibtex entry of type "+tpe+" requires fields "+missingReqFields.mkString(", "))
-    }
+  def isValid: Boolean = {
+    val allFields = fields.keySet ++ seqFields.keySet
+    val missingReqFields = requiredFields.filter(!_.satisfiedBy(allFields))
+
+    missingReqFields.isEmpty
   }
 
   def getKey: String = {
@@ -239,12 +247,10 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 
     buffer.dropRight(2).append("\n}").toString
   }
-
-  checkConsistency()
 }
 
 object BibTeXEntry {
-  def fromEntryMap(map : Map[String,MString]) : Option[BibTeXEntry] = {
+  def fromEntryMap(map : Map[String,MString], onError: String => Unit) : Option[BibTeXEntry] = {
     try {
       val tpe            = BibTeXEntryTypes.withName(map.get("type").map(_.toJava).getOrElse(throw new InconsistentBibTeXEntry("Missing type information")))
 
@@ -264,6 +270,7 @@ object BibTeXEntry {
       Some(BibTeXEntry(tpe, fields, seqFields))
     } catch {
       case InconsistentBibTeXEntry(msg) =>
+        onError(msg)
         None
     }
   }
