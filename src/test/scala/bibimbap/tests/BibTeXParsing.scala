@@ -11,14 +11,9 @@ import org.scalatest.matchers.ShouldMatchers
 class BibTeXParsing extends FunSuite with ShouldMatchers {
   def entriesAndErrors(str : String) : (Seq[BibTeXEntry],Int) = {
     var errorCount : Int = 0
-    def errorHandler(s : String) : Unit = {
-      errorCount += 1
-//      println(s)
-    }
-
+    def errorHandler(s : String) : Unit = { errorCount += 1 }
     val parser = new BibTeXParser(Source.fromString(str), errorHandler)
     val entries = parser.entries.toSeq
-//    for(entry <- entries) println(entry)
     (entries, errorCount)
   }
 
@@ -43,13 +38,11 @@ This is a dummy BibTeX file.
 
   test("One valid entry with one broken field") {
     val src = """
-@inproceedings{ThreeGuys1291OnTheMountain,
-  title  = "On " # "BibTeX {"}Entries{"}",
-  author = {Alfred U. Thor},
-  field = "Broken String,
-  other = 1,
+@misc{ThreeGuys1291OnTheMountain,
+  author = {Werner Stauffacher and Walter F{\"u}rst and Arnold of Melchtal},
+  title  = "R{\"u}tlischwur",
   year   = 2012,
-  booktitle = {{BIG}CONF}
+  field  = "Broken String}", 
 } 
     """
     

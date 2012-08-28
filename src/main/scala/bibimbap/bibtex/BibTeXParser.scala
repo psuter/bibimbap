@@ -9,12 +9,6 @@ import scala.io.Position
 
 import scala.collection.mutable.{Map=>MutableMap}
 
-// Still TODO :
-//   - make parser completely error-resilient.
-//   - ideally, take error reporting function as constructor argument
-//   - parse string constants, maintain environment
-//   - parse @COMMENT, etc.
-
 class BibTeXParser(src : Source, error : String=>Unit) {
   case class BibTeXParseError(msg : String) extends Exception(msg)
   private val lexer = new Lexer
@@ -145,7 +139,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     val s1 = parseSingleString
 
     val builder = new StringBuilder
-    builder.append(s1.toString)
+    builder.append(s1)
 
     while(lastToken == SHARP()) {
       nextToken
@@ -153,7 +147,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
       builder.append(s2)
     }
 
-    builder.toString
+    StringUtils.normalizeSpace(builder.toString)
   }
 
   private def parseSingleString : String = lastToken match {
@@ -248,8 +242,9 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     private def isValidIDFirst(char : Char) : Boolean = Character.isLetter(char)
     private def isValidIDNonFirst(char : Char) : Boolean = char match {
       case _ if Character.isLetterOrDigit(char) => true
+      // these should really not be allowed
+      case '=' | '{' | '}' | '"' | '@' | '\\' | '#' | '~' | '%' | ',' => false 
       case ':' | '/' | '-' | '_' => true
-      case '=' | '{' | '}' | '"' => false
       case _ => false
     }
     private def isValidDigit(char : Char) : Boolean = Character.isDigit(char)
@@ -315,8 +310,8 @@ class BibTeXParser(src : Source, error : String=>Unit) {
                 }
               }
               if(lastChar == '\n') {
-                // this is really just a warning.
-                if(matching == '"') { error("Line break in \"...\" string. " + posString(src.pos)) }
+                // Apparently it's common enough that we should just accept it.
+                // if(matching == '"') { error("Line break in \"...\" string. " + posString(src.pos)) }
                 lastChar = ' '
               }
               builder.append(lastChar)
@@ -326,9 +321,9 @@ class BibTeXParser(src : Source, error : String=>Unit) {
           nextChar
           (errorMsg.map(e => ERROR(e)).getOrElse {
             if(openCount > 0) {
-              ERROR("Unclosed { in string.")
+              ERROR("Unclosed { in string.").setPos(tokenPos)
             } else {
-              STRING(builder.toString) 
+              STRING(StringUtils.normalizeSpace(builder.toString)).setPos(tokenPos)
             }
           }).setPos(tokenPos)
         }
@@ -341,10 +336,6 @@ class BibTeXParser(src : Source, error : String=>Unit) {
           ID(builder.toString).setPos(tokenPos)
         }
 
-        case '0' => {
-          nextChar
-          NUM(0).setPos(tokenPos)
-        }
         case _ if isValidDigit(lastChar) => {
           builder.setLength(0)
           do {
