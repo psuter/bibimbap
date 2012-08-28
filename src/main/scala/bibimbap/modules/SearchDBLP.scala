@@ -119,7 +119,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
                 "type"      -> BibTeXEntryTypes.Proceedings.toString,
                 "title"     -> title,
                 "authors"   -> authors,
-                "venue"     -> venue.map(MString.fromJava).getOrElse(unknown),
+                "booktitle" -> venue.map(MString.fromJava).getOrElse(unknown),
                 "year"      -> yr2yr(venueYear).getOrElse(year.getOrElse(unknown)),
                 "pages"     -> pages.map(MString.fromJava).getOrElse(unknown)
             ), console ! Error(_))
