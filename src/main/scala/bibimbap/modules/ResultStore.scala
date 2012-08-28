@@ -119,8 +119,8 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     for (res <- results) {
       val spc = if (i < 10) "" else " "
 
-      val colSourceCache     = if (res.sources.contains("cache")) Console.YELLOW+"c"+Console.RESET else " "
-      val colSourceDBLP      = if (res.sources.contains("dblp"))  Console.YELLOW+"w"+Console.RESET else " "
+      val colSourceCache     = if (res.sources.contains("cache"))    Console.YELLOW+"c"+Console.RESET else " "
+      val colSourceDBLP      = if (res.sources.contains("dblp"))     Console.YELLOW+"w"+Console.RESET else " "
       val colSourceImported  = if (res.sources.contains("managed"))  Console.GREEN+"I"+Console.RESET else " "
       val colSourceLoad      = if (res.sources.contains("loaded"))   Console.GREEN+"L"+Console.RESET else " "
       val colInvalid         = if (!res.entry.isValid) Console.RED+"!"+Console.RESET else " "

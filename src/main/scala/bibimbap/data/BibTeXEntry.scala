@@ -19,11 +19,19 @@ object BibTeXEntryTypes extends Enumeration {
   val TechReport =    Value("techreport")
   val Unpublished =   Value("unpublished")
 
-  val requiredFieldsFor = Map[BibTeXEntryType, Set[String]](
+  case class OneOf(fs: String*) {
+    val set = fs.toSet
+    def satisfiedBy(fields: Set[String]): Boolean = (set -- fields).isEmpty
+  }
+
+  import language.implicitConversions
+  implicit def strToOneOf(str: String) = OneOf(str)
+
+  val requiredFieldsFor = Map[BibTeXEntryType, Set[OneOf]](
     Article         -> Set("authors", "title", "journal", "year"),
-    Book            -> Set("authors", "editors", "title", "publisher", "year"),
+    Book            -> Set(OneOf("authors", "editors"), "title", "publisher", "year"),
     Booklet         -> Set("title"),
-    InBook          -> Set("authors", "editors", "title", "chapter", "pages", "publisher", "year"),
+    InBook          -> Set(OneOf("authors", "editors"), "title", OneOf("chapter", "pages"), "publisher", "year"),
     InCollection    -> Set("authors", "title", "booktitle", "year"),
     InProceedings   -> Set("authors", "title", "booktitle", "year"),
     Manual          -> Set("title"),
@@ -100,7 +108,8 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
   }
 
   def isValid: Boolean = {
-    val missingReqFields = requiredFields -- fields.keySet -- seqFields.keySet
+    val allFields = fields.keySet ++ seqFields.keySet
+    val missingReqFields = requiredFields.filter(!_.satisfiedBy(allFields))
 
     missingReqFields.isEmpty
   }
