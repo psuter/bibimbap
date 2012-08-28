@@ -32,12 +32,10 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
   def doEdit(res: SearchResult): SearchResult = {
     console ! Out("Editing: ")
 
-    var map = res.entry.entryOptMap
+    var map = res.entry.entryMap
 
-    def display(map: Map[String, Option[MString]]) {
-      for ((k, optv) <- map) {
-        val v = optv.getOrElse("<empty>")
-
+    def display(map: Map[String, MString]) {
+      for ((k, v) <- map) {
         console ! Out("  %12s = %s".format(k, v))
       }
     }
@@ -72,7 +70,11 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
               None
           }
 
-          map += field -> newValue
+          if (newValue.isEmpty) {
+            map -= field
+          } else {
+            map += field -> newValue.get
+          }
         case Some(LineRead(field)) =>
           console ! Error("Unknown field: "+field)
         case _ =>
@@ -84,7 +86,7 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
       console ! Success("Edit cancelled!")
       res
     } else {
-      BibTeXEntry.fromOptEntryMap(map) match {
+      BibTeXEntry.fromEntryMap(map) match {
         case Some(entry) =>
           console ! Success("Entry edited!")
           res.copy(entry = entry)

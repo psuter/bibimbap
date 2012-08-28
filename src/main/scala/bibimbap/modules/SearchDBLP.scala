@@ -62,7 +62,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
     })
   }
 
-  private val unknown : String = "???"
+  private val unknown : MString = MString.fromJava("???")
 
   private val CoRR = """(.*CoRR.*)""".r
   
@@ -79,22 +79,19 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
   private val JourVenueStr3 = """(.*) (\d+)\((\d+)\) \((\d\d\d\d)\)""".r
 
   private def recordToResult(record : JValue) : Option[SearchResult] = {
-    def yr2yr(year : Option[String]) : Option[Int] = try {
-      year.map(_.trim.toInt)
-    } catch {
-      case nfe : NumberFormatException => None
-    }
+    def yr2yr(year : Option[String]) : Option[MString] =
+      year.map(str => MString.fromJava(str.trim))
 
     (record \ "title") match {
       case obj : JObject => {
-        val authors : Seq[String] = (obj \ "dblp:authors" \ "dblp:author") match {
+        val authors : MString = ((obj \ "dblp:authors" \ "dblp:author") match {
           case JArray(elems) => elems.collect { case JString(str) => str }
           case JString(single) => Seq(single)
           case _ => Nil
-        }
+        }).map(MString.fromJava(_)).mkString(" and ")
 
-        val title : String = (obj \ "dblp:title" \ "text") match {
-          case JString(str) => cleanupTitle(str)
+        val title : MString = (obj \ "dblp:title" \ "text") match {
+          case JString(str) => MString.fromJava(cleanupTitle(str))
           case _ => unknown
         }
 
@@ -103,8 +100,8 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
           case _ => None
         }
 
-        val year : Option[Int] = (obj \ "dblp:year") match {
-          case JInt(bigInt) => Some(bigInt.toInt)
+        val year : Option[MString] = (obj \ "dblp:year") match {
+          case JInt(bigInt) => Some(MString.fromJava(bigInt.toString))
           case _ => None
         }
 
@@ -118,14 +115,16 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
               case _ => (None, None, None)
             }
 
-            val entry = new InProceedings(
-              authors,
-              title,
-              MString.fromJava(venue.getOrElse(unknown)),
-              yr2yr(venueYear).getOrElse(year.getOrElse(0)),
-              pages = pages
-            )
-            Some(SearchResult(entry, link, "DBLP"))
+            val entry = BibTeXEntry.fromEntryMap(Map[String, MString](
+                "type"      -> BibTeXEntryTypes.Proceedings.toString,
+                "title"     -> title,
+                "authors"   -> authors,
+                "venue"     -> venue.map(MString.fromJava).getOrElse(unknown),
+                "year"      -> yr2yr(venueYear).getOrElse(year.getOrElse(unknown)),
+                "pages"     -> pages.map(MString.fromJava).getOrElse(unknown)
+            ))
+
+            entry.map(SearchResult(_, link, "DBLP"))
           }
 
           case JString("article") => {
@@ -142,16 +141,24 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
             if(isCoRR) {
               None
             } else {
-              val entry = new Article(
-                authors,
-                title,
-                MString.fromJava(jour.getOrElse(unknown)),
-                yr2yr(yr).getOrElse(year.getOrElse(0)),
-                volume = vol,
-                number = num,
-                pages = pgs
+              var map = Map[String, MString](
+                "authors"   -> authors,
+                "title"     -> title,
+                "journal"   -> jour.map(MString.fromJava).getOrElse(unknown),
+                "year"      -> yr2yr(yr).getOrElse(year.getOrElse(unknown))
               )
-              Some(SearchResult(entry, link, "DBLP"))
+
+              if (!vol.isEmpty) {
+                map += "volume" -> MString.fromJava(vol.get)
+              }
+              if (!num.isEmpty) {
+                map += "number" -> MString.fromJava(num.get)
+              }
+              if (!pgs.isEmpty) {
+                map += "pages" -> MString.fromJava(pgs.get)
+              }
+
+              BibTeXEntry.fromEntryMap(map).map(SearchResult(_, link, "DBLP"))
             }
           }
 
