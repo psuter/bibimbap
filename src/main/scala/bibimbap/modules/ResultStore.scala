@@ -13,16 +13,6 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     case Command1("list") | Command1("show") =>
       displayResults()
       sender ! CommandSuccess
-    case Command2("import", ind) =>
-      getResults(ind) match {
-        case Some(rs) =>
-          for (r <- rs) {
-            doImport(r)
-          }
-        case None =>
-          console ! Error("Invalid search result")
-      }
-      sender ! CommandSuccess
     case Command2("show", ind) =>
       getResults(ind) match {
         case Some(rs) =>
@@ -82,32 +72,6 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
           None
         }
     }
-  }
-
-  private def doImport(res: SearchResult) {
-    import java.io.{FileWriter,File}
-
-    val fn = settings("general", "bib.filename")
-    val fw = new FileWriter(new File(fn), true)
-    fw.write(res.entry.toString)
-    fw.write("\n\n")
-    fw.close
-
-    import java.awt.Toolkit
-    import java.awt.datatransfer.StringSelection
-    try {
-      val clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
-      val stringSel = new StringSelection(res.entry.getKey)
-      clipboard.setContents(stringSel, stringSel)
-    } catch {
-      case e: java.awt.HeadlessException =>
-        console ! Warning("Could not store in clipboard: "+e.getMessage.trim)
-    }
-
-    // Inform search module that we imported this
-    modules("search") ! ImportedResult(res)
-
-    console ! Success("Imported: \\cite{"+res.entry.getKey+"}")
   }
 
   private def doShow(res: SearchResult) {

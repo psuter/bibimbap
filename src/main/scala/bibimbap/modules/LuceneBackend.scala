@@ -25,7 +25,7 @@ trait LuceneBackend {
 
   def getLuceneIndex : Directory
 
-  protected var index: Directory = initializeIndex
+  protected var index: Directory = null
 
   def initializeIndex() = {
     val idx = getLuceneIndex
@@ -33,7 +33,7 @@ trait LuceneBackend {
     val cfg = new IndexWriterConfig(Version.LUCENE_36, analyzer)
     val w = new IndexWriter(idx, cfg)
     w.close()
-    idx
+    index = idx
   }
 
   def searchLucene(query: String): List[SearchResult] =
@@ -95,7 +95,7 @@ trait LuceneBackend {
   }
 
   def clear() = {
-    index = initializeIndex()
+    initializeIndex()
   }
 
 }
@@ -114,7 +114,7 @@ trait LuceneHDDBackend extends LuceneBackend {
     import java.io.IOException
     try {
       FileUtils.deleteDirectory(cacheDir)
-      index = initializeIndex()
+      initializeIndex()
     } catch {
       case ioe : IOException =>
         console ! Warning(ioe.getLocalizedMessage)
@@ -124,8 +124,12 @@ trait LuceneHDDBackend extends LuceneBackend {
   def getLuceneIndex = FSDirectory.open(cacheDir)
 }
 
-trait LuceneSearchProvider {
-  this: SearchProvider with LuceneBackend =>
+trait LuceneSearchProvider extends SearchProvider {
+  this: LuceneBackend =>
+
+  override def preStart() {
+    initializeIndex()
+  }
 
   override def search(terms: List[String]): SearchResults = {
     val query = terms.mkString(" ").trim

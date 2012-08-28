@@ -6,15 +6,10 @@ import java.util.concurrent.TimeoutException
 
 import data._
 
-class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends Module {
+class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, val searchProviders: List[ActorRef]) extends Module {
   val name = "search"
 
   override val dependsOn = Set("results")
-
-  private val searchModules = List(
-    context.actorOf(Props(new SearchLocal(repl, console, settings)), name = "SearchLocal"),
-    context.actorOf(Props(new SearchDBLP(repl, console, settings)),  name = "SearchDBLP")
-  )
 
   lazy val resultsModule = modules("results")
 
@@ -27,7 +22,7 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
       sender ! CommandSuccess
 
     case ImportedResult(res) =>
-      for (m <- searchModules) {
+      for (m <- searchProviders) {
         m ! ImportedResult(res)
       }
 
@@ -45,7 +40,7 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
 
   private def doSearch(args: List[String]): List[SearchResult] = {
     try {
-      val resultsPerSearch = dispatchCommand[SearchResults](Search(args), searchModules)
+      val resultsPerSearch = dispatchCommand[SearchResults](Search(args), searchProviders)
       combineResults(resultsPerSearch)
     } catch {
       case e: TimeoutException =>

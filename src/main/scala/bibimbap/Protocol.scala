@@ -51,11 +51,11 @@ case class GetResults(index: String)
 
 // => ShowResults
 // <= CommandSuccess
-case object ShowResults
+case object ShowResults extends Command
 
 // => ReplaceResults(index, results)
 // <= CommandSuccess
-case class ReplaceResults(index: String, entries: List[SearchResult])
+case class ReplaceResults(index: String, entries: List[SearchResult]) extends Command
 
 // => ImportedResult
 // ASYNC
