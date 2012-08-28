@@ -16,7 +16,7 @@ import java.net.UnknownHostException
 
 import json._
 
-class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends SearchModule {
+class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends SearchProvider {
   val name   = "Search DBLP"
   val source = "dblp"
 

@@ -3,10 +3,10 @@ package bibimbap
 import data._
 import akka.actor._
 
-trait SearchModule extends Actor {
+trait SearchProvider extends Actor {
   val source: String
 
-  def receive = {
+  def receive: Receive = {
     case Search(terms) =>
       sender ! search(terms)
 
