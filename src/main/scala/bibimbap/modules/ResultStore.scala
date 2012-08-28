@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext
 
 import data._
 
-class ResultStore(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends Module {
+class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends Module {
   val name = "results"
 
   private var results = List[SearchResult]()
@@ -28,7 +28,7 @@ class ResultStore(val repl: ActorRef, val logger: ActorRef, val settings: Settin
             doImport(r)
           }
         case None =>
-          logger ! Error("Invalid search result")
+          console ! Error("Invalid search result")
       }
       sender ! CommandSuccess
     case Command2("show", ind) =>
@@ -38,7 +38,7 @@ class ResultStore(val repl: ActorRef, val logger: ActorRef, val settings: Settin
             doShow(r)
           }
         case None =>
-          logger ! Error("Invalid search result")
+          console ! Error("Invalid search result")
       }
       sender ! CommandSuccess
 
@@ -90,28 +90,28 @@ class ResultStore(val repl: ActorRef, val logger: ActorRef, val settings: Settin
       clipboard.setContents(stringSel, stringSel)
     } catch {
       case e: java.awt.HeadlessException =>
-        logger ! Warning("Could not store in clipboard: "+e.getMessage.trim)
+        console ! Warning("Could not store in clipboard: "+e.getMessage.trim)
     }
 
     // Inform search module that we imported this
     modules("search") ! ImportedResult(res)
 
-    logger ! Success("Imported: \\cite{"+res.entry.getKey+"}")
+    console ! Success("Imported: \\cite{"+res.entry.getKey+"}")
   }
 
   private def doShow(res: SearchResult) {
-    logger ! Out(res.entry.toString)
+    console ! Out(res.entry.toString)
   }
 
   private def displayResults() {
     var i = 0
     for (res <- results) {
       val spc = if (i < 10) "" else " "
-      logger ! Info(spc+"["+i+"] "+res.entry.inlineString)
+      console ! Info(spc+"["+i+"] "+res.entry.inlineString)
       i += 1
     }
     if (results.isEmpty) {
-      logger ! Info("No match")
+      console ! Info("No match")
     }
   }
 

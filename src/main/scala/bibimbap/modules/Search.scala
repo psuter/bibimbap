@@ -12,14 +12,14 @@ import scala.concurrent.ExecutionContext
 
 import data._
 
-class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends Module {
+class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends Module {
   val name = "search"
 
   override val dependsOn = Set("results")
 
   private val searchModules = List(
-    context.actorOf(Props(new SearchLocal(repl, logger, settings)), name = "SearchLocal"),
-    context.actorOf(Props(new SearchDBLP(repl, logger, settings)),  name = "SearchDBLP")
+    context.actorOf(Props(new SearchLocal(repl, console, settings)), name = "SearchLocal"),
+    context.actorOf(Props(new SearchDBLP(repl, console, settings)),  name = "SearchDBLP")
   )
 
   lazy val resultsModule = modules("results")
@@ -55,7 +55,7 @@ class Search(val repl: ActorRef, val logger: ActorRef, val settings: Settings) e
       combineResults(resultsPerSearch)
     } catch {
       case e: TimeoutException =>
-        logger ! Error("Failed to gather search results in time")
+        console ! Error("Failed to gather search results in time")
         Nil
     }
   }

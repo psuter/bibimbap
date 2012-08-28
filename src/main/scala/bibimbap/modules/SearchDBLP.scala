@@ -16,7 +16,7 @@ import java.net.UnknownHostException
 
 import json._
 
-class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends SearchModule {
+class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends SearchModule {
   val name   = "Search DBLP"
   val source = "dblp "
 
@@ -34,15 +34,15 @@ class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Setting
       extractJSONRecords(text).flatMap(recordToResult).toList
     } catch {
       case ce : ConnectException => {
-        logger ! Warning("Connection error: " + ce.getLocalizedMessage)
+        console ! Warning("Connection error: " + ce.getLocalizedMessage)
         Nil
       }
       case ste : SocketTimeoutException => {
-        logger ! Warning("Network error: " + ste.getLocalizedMessage)
+        console ! Warning("Network error: " + ste.getLocalizedMessage)
         Nil
       }
       case uhe : UnknownHostException => {
-        logger ! Warning("Network error (unknown host): " + uhe.getLocalizedMessage)
+        console ! Warning("Network error (unknown host): " + uhe.getLocalizedMessage)
         Nil
       }
     }
@@ -114,7 +114,7 @@ class SearchDBLP(val repl: ActorRef, val logger: ActorRef, val settings: Setting
             val (venue,venueYear,pages) = (obj \ "dblp:venue" \ "text") match {
               case JString(ConfVenueStr1(v, y, p)) => (Some(cleanupVenue(v)), Some(y), Some(cleanupPages(p)))
               case JString(ConfVenueStr2(v, y)) => (Some(cleanupVenue(v)), Some(y), None)
-              case JString(os) => logger ! Warning("Could not extract venue information from string [" + os + "]."); (None, None, None)
+              case JString(os) => console ! Warning("Could not extract venue information from string [" + os + "]."); (None, None, None)
               case _ => (None, None, None)
             }
 

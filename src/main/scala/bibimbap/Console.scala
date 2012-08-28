@@ -1,33 +1,30 @@
 package bibimbap
 
 import akka.actor._
+import jline._
+import java.io.File
 
-class Logger(settings: Settings) extends Actor {
+class Console(settings: Settings, historyFileName: String) extends Actor {
   private def out(msg: String) {
     Console.println(msg)
   }
 
+  val reader = new ConsoleReader
+
+  override def preStart() {
+    val history = new History(new File(historyFileName))
+    reader.setHistory(history)
+  }
+
   var store = List[Any]()
 
+  private val defaultHandle = "bibimbap> "
+
   def receive = {
-    case LoggerFlush =>
-      Console.flush()
-
-      context.become {
-        case LoggerFlush =>
-          // Ingore
-        case LoggerContinue =>
-          context.unbecome()
-          store.foreach(receive(_))
-          store = Nil
-        case m => 
-          store = m :: store
-      }
-
-      sender ! LoggerFlush 
-
-    case LoggerContinue =>
-      // Ingore
+    case ReadLine =>
+      sender ! LineRead(reader.readLine(defaultHandle))
+    case ReadLineWithHandle(handle) =>
+      sender ! LineRead(reader.readLine(handle))
     case Out(msg: String) =>
       out(msg)
     case Info(msg: String) =>

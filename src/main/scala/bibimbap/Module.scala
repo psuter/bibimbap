@@ -11,7 +11,7 @@ import scala.concurrent.util.Duration
 
 trait Module extends Actor with ActorHelpers {
   val settings: Settings
-  val logger: ActorRef
+  val console: ActorRef
   val repl: ActorRef
 
   val name: String
@@ -22,12 +22,12 @@ trait Module extends Actor with ActorHelpers {
   def receive: Receive = {
     case Command2("help", command) =>
       if (helpItems contains command) {
-        helpItems(command).display(logger)
+        helpItems(command).display(console)
       }
       sender ! CommandSuccess
     case Command1("help") =>
       for ((command, hi) <- helpItems) {
-        helpItems(command).displayShort(logger)
+        helpItems(command).displayShort(console)
       }
       sender ! CommandSuccess
 
@@ -50,7 +50,7 @@ trait Module extends Actor with ActorHelpers {
 
     if (depsFound.size < dependsOn.size) {
       for (dep <- dependsOn if !(modules contains dep)) {
-        logger ! Error("Missing dependency: module '"+name+"' requires module '"+dep+"'")
+        console ! Error("Missing dependency: module '"+name+"' requires module '"+dep+"'")
       }
       repl ! Shutdown
     }

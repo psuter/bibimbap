@@ -10,25 +10,15 @@ import scala.concurrent.Future
 import scala.concurrent.util.duration._
 import scala.concurrent.ExecutionContext
 
-import jline._
-
-import java.io.File
-
 class Repl(homeDir: String, configFileName: String, historyFileName: String) extends Actor with ActorHelpers {
   val settings = (new ConfigFileParser(configFileName)).parse.getOrElse(DefaultSettings)
 
-  val handle = "bibimbap> "
-  val reader = new ConsoleReader
-
-  val logger = context.actorOf(Props(new Logger(settings)), name = "Logger")
+  val console = context.actorOf(Props(new Console(settings, historyFileName)), name = "Console")
 
   var modules = Map[String, ActorRef]()
 
   override def preStart = {
     sayHello()
-
-    val history = new History(new File(historyFileName))
-    reader.setHistory(history)
 
     startModules()
   }
@@ -37,9 +27,9 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
     import bibimbap.modules._
 
     modules = Map(
-      "general" -> context.actorOf(Props(new General(self, logger, settings)),      name = "general"),
-      "search"  -> context.actorOf(Props(new Search(self, logger, settings)),       name = "search"),
-      "results" -> context.actorOf(Props(new ResultStore(self, logger, settings)),  name = "results")
+      "general" -> context.actorOf(Props(new General(self, console, settings)),      name = "general"),
+      "search"  -> context.actorOf(Props(new Search(self, console, settings)),       name = "search"),
+      "results" -> context.actorOf(Props(new ResultStore(self, console, settings)),  name = "results")
     )
 
   }
@@ -53,10 +43,10 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
       case CommandSuccess  =>
         true
       case CommandException(e)    =>
-        logger ! Error(e.getMessage)
+        console ! Error(e.getMessage)
         false
       case CommandError(msg)      =>
-        logger ! Error(msg)
+        console ! Error(msg)
         false
       case _ =>
         false
@@ -65,9 +55,9 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
     if (!isKnown && !results.isEmpty) {
       cmd match {
         case InputCommand(line) =>
-          logger ! Error("Unknown command: "+line)
+          console ! Error("Unknown command: "+line)
         case _ =>
-          logger ! Error("Unknown command type: "+cmd)
+          console ! Error("Unknown command type: "+cmd)
       }
     }
   }
@@ -78,37 +68,35 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
       self ! ReadLine
 
     case ReadLine =>
-      // Flush message box of Logger and tore subsequent messages to avoid
-      // messing with input
-      Await.result(logger ? LoggerFlush, 1.seconds)
+      implicit val timeout = neverTimeout
 
-      println()
-      var line = reader.readLine(handle)
-      logger ! LoggerContinue
-
-      if(line == null) {
-        sys.exit(0)
-      } else {
-        line = line.trim
-        if(line != "") {
-          dispatchCommand(InputCommand(line))
-        }
+      syncMessage[LineRead](console, ReadLine) match {
+        case Some(EOF) =>
+          sys.exit(0)
+        case Some(LineRead(line)) =>
+          val cmd = line.trim
+          if(cmd != "") {
+            dispatchCommand(InputCommand(cmd))
+          }
+        case None =>
+          // TODO: find a better way to exit
+          sys.exit(0)
       }
 
       self ! ReadLine
     case Shutdown =>
       dispatchCommand(OnShutdown())
-      logger ! Out("Bye.")
+      console ! Out("Bye.")
       sys.exit(0)
   }
 
   private def sayHello() {
-    logger ! Out("""         __    _ __    _           __                        """)
-    logger ! Out("""   ———  / /_  (_) /_  (_)___ ___  / /_  ____ _____  ——————   """)
-    logger ! Out("""  ———  / __ \/ / __ \/ / __ `__ \/ __ \/ __ `/ __ \  ————    """)
-    logger ! Out(""" ———  / /_/ / / /_/ / / / / / / / /_/ / /_/ / /_/ /  ———     """)
-    logger ! Out("""———  /_.___/_/_.___/_/_/ /_/ /_/_.___/\__,_/ .___/  ———      """)
-    logger ! Out("""                                          /_/         비빔밥 """)
-    logger ! Out("")
+    console ! Out("""         __    _ __    _           __                        """)
+    console ! Out("""   ———  / /_  (_) /_  (_)___ ___  / /_  ____ _____  ——————   """)
+    console ! Out("""  ———  / __ \/ / __ \/ / __ `__ \/ __ \/ __ `/ __ \  ————    """)
+    console ! Out(""" ———  / /_/ / / /_/ / / / / / / / /_/ / /_/ / /_/ /  ———     """)
+    console ! Out("""———  /_.___/_/_.___/_/_/ /_/ /_/_.___/\__,_/ .___/  ———      """)
+    console ! Out("""                                          /_/         비빔밥 """)
+    console ! Out("")
   }
 }

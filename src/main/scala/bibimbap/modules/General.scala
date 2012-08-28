@@ -3,7 +3,7 @@ package modules
 
 import akka.actor._
 
-class General(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends Module {
+class General(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends Module {
   val name = "general"
 
   override def receive: Receive = {

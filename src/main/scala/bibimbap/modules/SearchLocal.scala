@@ -15,7 +15,7 @@ import org.apache.lucene.search._
 import org.apache.lucene.store._
 import org.apache.lucene.util.Version
 
-class SearchLocal(val repl: ActorRef, val logger: ActorRef, val settings: Settings) extends SearchModule {
+class SearchLocal(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends SearchModule {
   val name = "SearchLocal"
 
   val source = "cache"
@@ -43,7 +43,7 @@ class SearchLocal(val repl: ActorRef, val logger: ActorRef, val settings: Settin
       index = initializeIndex()
     } catch {
       case ioe : IOException =>
-        logger ! Warning(ioe.getLocalizedMessage)
+        console ! Warning(ioe.getLocalizedMessage)
     }
   }
 

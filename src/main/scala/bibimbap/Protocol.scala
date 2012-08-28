@@ -4,7 +4,9 @@ import akka.actor.ActorRef
 
 case object Start
 case object ReadLine
-
+case class  ReadLineWithHandle(handle: String)
+case class LineRead(str: String)
+object EOF extends LineRead(null)
 
 // logger stuff
 
@@ -29,10 +31,6 @@ case class CommandError(msg: String) extends CommandResult
 case class CommandException(e: Throwable) extends CommandResult
 case object CommandSuccess extends CommandResult
 case object CommandUnknown extends CommandResult
-
-// Interation between the REPL and the logger module
-case object LoggerFlush
-case object LoggerContinue
 
 // Protocol to/from search module
 //  => Search(terms)
