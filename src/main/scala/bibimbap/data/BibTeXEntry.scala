@@ -19,20 +19,52 @@ object BibTeXEntryTypes extends Enumeration {
   val TechReport =    Value("techreport")
   val Unpublished =   Value("unpublished")
 
-  val requiredFieldsFor = Map(
-    Article -> Set("year")
+  val requiredFieldsFor = Map[BibTeXEntryType, Set[String]](
+    Article         -> Set("authors", "title", "journal", "year"),
+    Book            -> Set("authors", "editors", "title", "publisher", "year"),
+    Booklet         -> Set("title"),
+    InBook          -> Set("authors", "editors", "title", "chapter", "pages", "publisher", "year"),
+    InCollection    -> Set("authors", "title", "booktitle", "year"),
+    InProceedings   -> Set("authors", "title", "booktitle", "year"),
+    Manual          -> Set("title"),
+    MastersThesis   -> Set("author", "title", "school", "year"),
+    Misc            -> Set(),
+    PhDThesis       -> Set("author", "title", "school", "year"),
+    Proceedings     -> Set("title", "year"),
+    TechReport      -> Set("author", "title", "institution", "year"),
+    Unpublished     -> Set("author", "title", "note")
   ).withDefaultValue(Set())
 
   val optionalFieldsFor = Map(
-    Article -> Set("year")
+    Article         -> Set("volume", "number", "pages", "month", "note", "key"),
+    Book            -> Set("volume", "series", "address", "edition", "month", "note", "key", "pages"),
+    Booklet         -> Set("authors", "howpublished", "address", "month", "year", "note", "key"),
+    InBook          -> Set("volume", "series", "address", "edition", "month", "note", "key"),
+    InCollection    -> Set("editor", "pages", "organization", "publisher", "address", "month", "note", "key"),
+    InProceedings   -> Set("editor", "pages", "organization", "publisher", "address", "month", "note", "key"),
+    Manual          -> Set("authors", "organization", "edition", "address", "year", "month", "note", "key"),
+    MastersThesis   -> Set("address", "month", "note", "key"),
+    Misc            -> Set("authors", "howpublished", "title", "month", "year", "note", "key"),
+    PhDThesis       -> Set("address", "month", "note", "key"),
+    Proceedings     -> Set("editor", "organization", "publisher", "address", "month", "note", "key"),
+    TechReport      -> Set("type", "number", "address", "month", "note", "key"),
+    Unpublished     -> Set("month", "year", "key")
   ).withDefaultValue(Set())
+
+  val allStdFields = Set("address", "abstract", "annote", "author",
+      "booktitle", "chapter", "crossref", "edition", "editors", "eprint",
+      "howpublished", "institution", "journal", "key", "month", "note", "number",
+      "organization", "pages", "publisher", "school", "series", "title", "type",
+      "url", "volume", "year")
 }
 
 case class InconsistentBibTeXEntry(msg: String) extends Exception(msg)
 
 // This datatypes and all the following ones assume crossrefs have been
 // "resolved" into all entries.
-case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType, fields: Map[String, MString], seqFields: Map[String, Seq[MString]]) extends Serializable {
+case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
+                       fields: Map[String, MString],
+                       seqFields: Map[String, Seq[MString]]) extends Serializable {
 
   val requiredFields = BibTeXEntryTypes.requiredFieldsFor(tpe)
   val optionalFields = BibTeXEntryTypes.optionalFieldsFor(tpe)
@@ -49,7 +81,6 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType, fields: Map[String
   val howpublished : Option[MString] = fields.get("howpublished")
   val institution  : Option[MString] = fields.get("institution")
   val journal      : Option[MString] = fields.get("journal")
-  val key          : Option[MString] = fields.get("key")
   val month        : Option[MString] = fields.get("month")
   val note         : Option[MString] = fields.get("note")
   val number       : Option[MString] = fields.get("number")
