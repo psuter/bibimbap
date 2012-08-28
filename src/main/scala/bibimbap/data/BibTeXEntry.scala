@@ -260,10 +260,11 @@ object BibTeXEntry {
       var seqFields = Map[String, Seq[MString]]()
 
       for ((field, value) <- map) {
-        if (!isSeqField(field)) {
-          fields += field -> value
+        val f = if (field == "author") "authors" else field
+        if (!isSeqField(f)) {
+          fields += f -> value
         } else {
-          seqFields += field -> value.toJava.split(" and ").map(MString.fromJava _).toSeq
+          seqFields += f -> value.toJava.split(" and ").map(MString.fromJava _).toSeq
         }
       }
 

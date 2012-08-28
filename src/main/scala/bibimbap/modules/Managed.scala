@@ -4,6 +4,9 @@ package modules
 import akka.actor._
 import data._
 import strings._
+import bibtex._
+
+import scala.io.Source
 
 class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends Module
                                                                                     with LuceneRAMBackend
@@ -12,13 +15,18 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
 
   val source = "managed"
 
-  override def preStart = {
-    super.preStart
-
-    // Load managed.bib into lucene
-  }
+  val managedPath = settings("general", "bib.filename")
 
   override def receive: Receive = {
+    case msg @ OnStartup(os) =>
+      super[Module].receive(msg)
+
+      val parser = new BibTeXParser(Source.fromFile(managedPath), console ! Error(_))
+
+      for (entry <- parser.entries) {
+        addEntry(entry, None)
+      }
+
     case Search(terms) =>
       sender ! search(terms)
 
@@ -37,17 +45,14 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       onImport(res)
       // no message back
 
-    case _: Command =>
-      sender ! CommandUnknown    
-
-    case _ =>
+    case msg =>
+      super[Module].receive(msg)
   }
 
   private def doImport(res: SearchResult) {
     import java.io.{FileWriter,File}
 
-    val fn = settings("general", "bib.filename")
-    val fw = new FileWriter(new File(fn), true)
+    val fw = new FileWriter(new File(managedPath), true)
     fw.write(res.entry.toString)
     fw.write("\n\n")
     fw.close
