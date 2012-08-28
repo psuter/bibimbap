@@ -18,7 +18,7 @@ import json._
 
 class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends SearchModule {
   val name   = "Search DBLP"
-  val source = "dblp "
+  val source = "dblp"
 
   override def search(terms: List[String]): SearchResults = {
     val results = try {
