@@ -51,11 +51,11 @@ class BibTeXParser(src : Source, error : String=>Unit) {
 
   private var lastToken : Token = null
   private def nextToken : Token = {
-    lastToken = lexer.nextToken 
+    lastToken = lexer.nextToken
     lastToken match {
       case ERROR(msg) => parseError(msg)
       case good => good
-    } 
+    }
   }
 
   private def eat(tester : Token=>Boolean) : Unit = {
@@ -64,7 +64,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     } else {
       parseError("Unexpected token : " + lastToken)
     }
-  } 
+  }
 
   private var firstTime : Boolean = true
   private def parseEntry : Option[RawEntry] = {
@@ -88,7 +88,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
         while(lastToken == COMMA()) {
           nextToken
         }
-      } 
+      }
       eat(_ == BLOCKEND())
       new RawEntry(kind, key, pairs.toMap)
     }(_ == AT())
@@ -96,7 +96,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
 
   private def parseID : String = lastToken match {
     case ID(value) => nextToken; value
-    case _ => parseError("Expected : identifier")     
+    case _ => parseError("Expected : identifier")
   }
 
   private def parseString : String = {
@@ -125,7 +125,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     val key = parseID.toLowerCase
     eat(_ == EQUALS())
     val value = parseString
-    (key -> value)  
+    (key -> value)
   }
 
   // Below is point is where the lexer sits.
@@ -176,7 +176,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
       }
     }
 
-  
+
     private var firstCall : Boolean = true
     def nextToken : Token = {
       if(firstCall) {
@@ -185,14 +185,14 @@ class BibTeXParser(src : Source, error : String=>Unit) {
       }
 
       while(!inEntry && lastChar != '@' && lastChar != EndOfFile) {
-        nextChar 
+        nextChar
       }
       while(isWhitespace(lastChar)) {
         nextChar
       }
-    
+
       readToken
-    } 
+    }
 
     private def isWhitespace(char : Char) : Boolean = Character.isWhitespace(char)
     private def isValidIDFirst(char : Char) : Boolean = Character.isLetter(char)
@@ -265,7 +265,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
                 }
               }
               builder.append(lastChar)
-              nextChar 
+              nextChar
             }
           }
           nextChar
@@ -300,5 +300,5 @@ class BibTeXParser(src : Source, error : String=>Unit) {
         }
       }
     }
-  } 
+  }
 }
