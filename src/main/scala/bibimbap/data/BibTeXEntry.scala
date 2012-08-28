@@ -5,250 +5,235 @@ import bibimbap.strings._
 
 object BibTeXEntryTypes extends Enumeration {
   type BibTeXEntryType = Value
-  val Article = Value("article")
-  val Book = Value("book")
-  val Booklet = Value("booklet")
-  val InBook = Value("inbook")
-  val InCollection = Value("incollection")
+  val Article =       Value("article")
+  val Book =          Value("book")
+  val Booklet =       Value("booklet")
+  val InBook =        Value("inbook")
+  val InCollection =  Value("incollection")
   val InProceedings = Value("inproceedings")
-  val Manual = Value("manual")
+  val Manual =        Value("manual")
   val MastersThesis = Value("mastersthesis")
-  val Misc = Value("misc")
-  val PhDThesis = Value("phdthesis")
-  val Proceedings = Value("proceedings")
-  val TechReport = Value("techreport")
-  val Unpublished = Value("unpublished")
+  val Misc =          Value("misc")
+  val PhDThesis =     Value("phdthesis")
+  val Proceedings =   Value("proceedings")
+  val TechReport =    Value("techreport")
+  val Unpublished =   Value("unpublished")
+
+  val requiredFieldsFor = Map(
+    Article -> Set("year")
+  ).withDefaultValue(Set())
+
+  val optionalFieldsFor = Map(
+    Article -> Set("year")
+  ).withDefaultValue(Set())
 }
+
+case class InconsistentBibTeXEntry(msg: String) extends Exception(msg)
 
 // This datatypes and all the following ones assume crossrefs have been
 // "resolved" into all entries.
-trait BibTeXEntry extends Serializable {
-  val entryType : BibTeXEntryTypes.BibTeXEntryType
+case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType, fields: Map[String, MString], seqFields: Map[String, Seq[MString]]) extends Serializable {
 
-  val address      : Option[MString] = None
-  val annote       : Option[MString] = None
-  val authors      : Seq[MString]    = Seq.empty
-  val booktitle    : Option[MString] = None
-  val chapter      : Option[Int]     = None
-  val edition      : Option[MString] = None
-  val editors      : Seq[MString]    = Seq.empty
-  val eprint       : Option[MString] = None
-  val howpublished : Option[MString] = None
-  val institution  : Option[MString] = None
-  val journal      : Option[MString] = None
-  val key          : Option[MString] = None
-  val month        : Option[MString] = None
-  val note         : Option[MString] = None
-  val number       : Option[MString] = None
-  val organization : Option[MString] = None
-  val pages        : Option[MString] = None
-  val publisher    : Option[MString] = None
-  val school       : Option[MString] = None
-  val series       : Option[MString] = None
-  val title        : Option[MString] = None
-  val trType       : Option[MString] = None
-  val url          : Option[MString] = None
-  val volume       : Option[MString] = None
-  val year         : Option[Int]     = None
+  val requiredFields = BibTeXEntryTypes.requiredFieldsFor(tpe)
+  val optionalFields = BibTeXEntryTypes.optionalFieldsFor(tpe)
 
-  override def toString = entryToString(this, entryToKey(this))
+  // convenience fields
+  val address      : Option[MString] = fields.get("address")
+  val annote       : Option[MString] = fields.get("annote")
+  val authors      : Seq[MString]    = seqFields.getOrElse("authors", Seq.empty)
+  val booktitle    : Option[MString] = fields.get("booktitle")
+  val chapter      : Option[MString] = fields.get("chapter")
+  val edition      : Option[MString] = fields.get("edition")
+  val editors      : Seq[MString]    = seqFields.getOrElse("editors", Seq.empty)
+  val eprint       : Option[MString] = fields.get("eprint")
+  val howpublished : Option[MString] = fields.get("howpublished")
+  val institution  : Option[MString] = fields.get("institution")
+  val journal      : Option[MString] = fields.get("journal")
+  val key          : Option[MString] = fields.get("key")
+  val month        : Option[MString] = fields.get("month")
+  val note         : Option[MString] = fields.get("note")
+  val number       : Option[MString] = fields.get("number")
+  val organization : Option[MString] = fields.get("organization")
+  val pages        : Option[MString] = fields.get("pages")
+  val publisher    : Option[MString] = fields.get("publisher")
+  val school       : Option[MString] = fields.get("school")
+  val series       : Option[MString] = fields.get("series")
+  val title        : Option[MString] = fields.get("title")
+  val trType       : Option[MString] = fields.get("trType")
+  val url          : Option[MString] = fields.get("url")
+  val volume       : Option[MString] = fields.get("volume")
+  val year         : Option[MString] = fields.get("year")
 
-  def getKey = entryToKey(this)
+  lazy val entryMap = {
+    Map("type" -> MString.fromJava(tpe.toString)) ++ fields ++ seqFields.mapValues(seq => MString.fromJava(seq.map(_.toJava).mkString(" and ")))
+  }
 
-  def inlineString = entryToInline(this)
-
-  lazy val entryOptMap : Map[String, Option[MString]] = {
-    var base: Map[String, Option[MString]] = Map("type" -> Some(MString.fromJava(entryType.toString)))
-
-    def add(name : String, f : Option[MString]) {
-      base += name -> f
+  def checkConsistency() {
+    val missingReqFields = requiredFields -- fields.keySet -- seqFields.keySet
+    if (!missingReqFields.isEmpty) {
+      throw new InconsistentBibTeXEntry("Bibtex entry of type "+tpe+" requires fields "+missingReqFields.mkString(", "))
     }
-    def addSeq(name : String, seq : Seq[MString]) {
-      if(!seq.isEmpty) {
-        base += name -> Some(MString.fromJava(seq.map(_.toJava).mkString(" and ")))
-      } else {
-        base += name -> None
+  }
+
+  def getKey: String = {
+    val commonWords = Set("", "in", "the", "a", "an", "of", "for", "and", "or", "by", "on", "with")
+
+    def isBibTeXFriendly(c : Char) : Boolean = (
+      (c >= 'A' && c <= 'Z') ||
+      (c >= 'a') && (c <= 'z') ||
+      (c >= '0') && (c <= '9')
+    )
+
+    def camelcasify(str : MString) : Seq[String] = {
+      str.toJava.split(" ")
+        .map(bit => MString.javaToASCII(bit).filter(isBibTeXFriendly))
+        .filterNot(_.isEmpty)
+        .map(_.toLowerCase)
+        .filterNot(commonWords)
+        .map(_.capitalize)
+    }
+
+    def lastFromPerson(person : MString) : String = {
+      val lastBit = MString.fromJava(person.toJava.split(" ").last)
+      lastBit.toASCII.filter(isBibTeXFriendly)
+    }
+
+    val persons   = if(!authors.isEmpty) authors else editors
+    val lastnames = if(persons.size > 3) {
+      lastFromPerson(persons(0)) + "ETAL"
+    } else {
+      persons.map(lastFromPerson).mkString("")
+    }
+
+    val yr = year match {
+      case Some(y) => {
+        val last = y.toJava.toInt % 100
+        if(last < 10) "0" + last else last.toString
+      }
+      case None => ""
+    }
+
+    val title = this.title.map(t =>
+      camelcasify(t).take(6).mkString("")
+    ).getOrElse("")
+
+    lastnames + yr + title
+  }
+
+  // Tries to shorten the first names (whatever that means).
+
+  def inlineString: String = {
+
+    def shortenName(name : String) : String = {
+      val elements = name.split(" ").filterNot(_.isEmpty)
+      elements.dropRight(1).map(e => e(0) + ".").mkString("") + elements.last
+    }
+
+    val (persons,areEditors) = if(!authors.isEmpty) {
+      (authors, false)
+    } else {
+      (editors, true)
+    }
+
+    val personString = if(persons.size > 4) {
+      shortenName(persons.head.toJava) + " et al."
+    } else {
+      persons.map(p => shortenName(p.toJava)).mkString(", ")
+    }
+
+    val names = if(areEditors) (personString + " ed.") else personString
+
+    val title = "\"" + this.title.map(_.toJava).getOrElse("?") + "\""
+
+    val where =
+      booktitle.map(_.toJava).getOrElse(
+        journal.map(_.toJava).getOrElse(
+          school.map(_.toJava).getOrElse(
+            howpublished.map(_.toJava).getOrElse("?"))))
+
+    val year = this.year.map(_.toString).getOrElse("?")
+
+    names + ", " + title + ", " + where + ", " + year
+  }
+
+  override def toString = toStringWithKey(getKey)
+
+  def toStringWithKey(key : String) : String = {
+    val buffer = new StringBuilder
+    buffer.append("@" + tpe + "{" + key + ",\n")
+
+    def printOptField(name : String, value : Option[MString]) {
+      value.foreach(content => {
+        buffer.append("  ")
+        buffer.append("%12s = {".format(name))
+        buffer.append(content.toLaTeX)
+        buffer.append("},\n")
+      })
+    }
+
+    def printSeqField(name : String, values : Seq[MString]) {
+      if(!values.isEmpty) {
+        buffer.append("  ")
+        buffer.append("%12s = {".format(name))
+        buffer.append(values.map(_.toLaTeX).mkString(" and "))
+        buffer.append("},\n")
       }
     }
-    add("address",      this.address)
-    add("annote",       this.annote)
-    addSeq("author",    this.authors)
-    add("booktitle",    this.booktitle)
-    add("chapter",      this.chapter.map(c => MString.fromJava(c.toString)))
-    add("edition",      this.edition)
-    addSeq("editor",    this.editors)
-    add("eprint",       this.eprint)
-    add("howpublished", this.howpublished)
-    add("institution",  this.institution)
-    add("journal",      this.journal)
-    add("key",          this.key)
-    add("month",        this.month)
-    add("note",         this.note)
-    add("number",       this.number)
-    add("organization", this.organization)
-    add("pages",        this.pages)
-    add("publisher",    this.publisher)
-    add("school",       this.school)
-    add("series",       this.series)
-    add("title",        this.title)
-    add("trType",       this.trType)
-    add("url",          this.url)
-    add("volume",       this.volume)
-    add("year",         this.year.map(y => MString.fromJava(y.toString)))
 
-    base
+    printSeqField("author",         authors)
+    printSeqField("editor",         editors)
+    printOptField("title",          title)
+    printOptField("booktitle",      booktitle)
+    printOptField("journal",        journal)
+    printOptField("pages",          pages)
+    printOptField("chapter",        chapter)
+    printOptField("volume",         volume)
+    printOptField("number",         number)
+    printOptField("series",         series)
+    printOptField("month",          month)
+    printOptField("year",           year)
+    printOptField("address",        address)
+    printOptField("edition",        edition)
+    printOptField("institution",    institution)
+    printOptField("howpublished",   howpublished)
+    printOptField("key",            Some(key))
+    printOptField("organization",   organization)
+    printOptField("publisher",      publisher)
+    printOptField("school",         school)
+    printOptField("type",           trType)
+    printOptField("url",            url)
+    printOptField("eprint",         eprint)
+    printOptField("annote",         annote)
+    printOptField("note",           note)
+
+    buffer.dropRight(2).append("\n}").toString
   }
 
-  lazy val entryMap : Map[String,MString] = {
-    entryOptMap.filterNot(_._2.isEmpty).mapValues(_.get)
-  }
+  checkConsistency()
 }
 
 object BibTeXEntry {
-  def fromOptEntryMap(map : Map[String, Option[MString]]) : Option[BibTeXEntry] = {
-    fromEntryMap(map.filterNot(_._2.isEmpty).mapValues(_.get))
-  }
-
-
   def fromEntryMap(map : Map[String,MString]) : Option[BibTeXEntry] = {
-    def get(key : String) : Option[MString] = map.get(key)
-    def getInt(key : String) : Option[Int] = map.get(key).flatMap(_.toIntOpt)
-    def getSeq(key : String) : Seq[MString] = {
-      map.get(key).map(ms => {
-        val ss : Seq[MString] = ms.toJava.split(" and ").map(s => MString.fromJava(s))
-        ss
-      }).getOrElse(
-        Seq.empty[MString]
-      )
+    try {
+      val tpe            = BibTeXEntryTypes.withName(map.get("type").map(_.toJava).getOrElse(throw new InconsistentBibTeXEntry("Missing type information")))
+
+      val isSeqField = Set("authors", "editors")
+
+      var fields    = Map[String, MString]()
+      var seqFields = Map[String, Seq[MString]]()
+
+      for ((field, value) <- map) {
+        if (!isSeqField(field)) {
+          fields += field -> value
+        } else {
+          seqFields += field -> value.toJava.split(" and ").map(MString.fromJava _).toSeq
+        }
+      }
+
+      Some(BibTeXEntry(tpe, fields, seqFields))
+    } catch {
+      case InconsistentBibTeXEntry(msg) =>
+        None
     }
-
-    map.get("type").flatMap(_.toJava match {
-      case "article" => for(
-        a <- Some(getSeq("author")) if !a.isEmpty;
-        t <- get("title");
-        j <- get("journal");
-        y <- getInt("year")) yield {
-        new Article(a, t, j, y,
-          volume = get("volume"),
-          number = get("number"),
-          pages = get("pages"),
-          month = get("month"),
-          note = get("note"),
-          key = get("key")
-        )
-      }
-
-      case "inproceedings" => for(
-        a <- Some(getSeq("author")) if !a.isEmpty;
-        t <- get("title");
-        b <- get("booktitle");
-        y <- getInt("year")) yield {
-        new InProceedings(a, t, b, y,
-          editors = getSeq("editor"),
-          series = get("series"),
-          pages = get("pages"),
-          organization = get("organization"),
-          publisher = get("publisher"),
-          address = get("address"),
-          month = get("month"),
-          note = get("note"),
-          key = get("key")
-        ) 
-      }
-
-      case _ => None
-    })
   }
 }
-
-final class InconsistentBibTeXEntry(msg : String) extends Exception(msg)
-
-final class Article(
-  auth : Seq[MString], titl : MString, jour : MString, yr : Int,
-  override val volume : Option[MString] = None,
-  override val number : Option[MString] = None,
-  override val pages : Option[MString] = None,
-  override val month : Option[MString] = None,
-  override val note : Option[MString] = None,
-  override val key : Option[MString] = None
-) extends BibTeXEntry {
-  implicit val entryType = BibTeXEntryTypes.Article
-
-  forConsistency("author list must be defined") {
-    !auth.isEmpty
-  }
-
-  override val authors = auth
-  override val title   = Some(titl)
-  override val journal = Some(jour)
-  override val year    = Some(yr) 
-}
-
-final class Book(
-  auth : Seq[MString], editrs : Seq[MString], titl : MString, pubshr : MString, yr : Int,
-  override val volume : Option[MString] = None,
-  override val series : Option[MString] = None,
-  override val address : Option[MString] = None,
-  override val edition : Option[MString] = None,
-  override val month : Option[MString] = None,
-  override val note : Option[MString] = None,
-  override val key : Option[MString] = None
-) extends BibTeXEntry {
-  implicit val entryType = BibTeXEntryTypes.Book
-
-  forConsistency("author list or editor list must be defined") {
-    !(auth.isEmpty && editrs.isEmpty)
-  }
-
-  override val authors   = auth
-  override val editors   = editrs
-  override val title     = Some(titl)
-  override val publisher = Some(pubshr)
-  override val year      = Some(yr)
-}
-
-// Missing : booklet, conference, inbook, incollection
-
-final class InProceedings(
-  auth : Seq[MString], titl : MString, bktitl : MString, yr : Int,
-  override val editors : Seq[MString] = Seq.empty,
-  override val series : Option[MString] = None,
-  override val pages : Option[MString] = None,
-  override val organization : Option[MString] = None,
-  override val publisher : Option[MString] = None,
-  override val address : Option[MString] = None,
-  override val month : Option[MString] = None,
-  override val note : Option[MString] = None,
-  override val key : Option[MString] = None
-) extends BibTeXEntry {
-  implicit val entryType = BibTeXEntryTypes.InProceedings
-
-  forConsistency("author list must be defined") {
-    !auth.isEmpty
-  }
-
-  override val authors   = auth
-  override val title     = Some(titl)
-  override val booktitle = Some(bktitl)
-  override val year      = Some(yr)
-}
-
-// Missing : manual, mastersthesis, misc, phdthesis
-
-final class Proceedings(
-  titl : MString, yr : Int,
-  override val editors : Seq[MString] = Seq.empty,
-  override val publisher  : Option[MString] = None,
-  override val organization : Option[MString] = None,
-  override val address : Option[MString] = None,
-  override val month : Option[MString] = None,
-  override val note : Option[MString] = None,
-  override val key : Option[MString] = None
-) extends BibTeXEntry {
-  implicit val entryType = BibTeXEntryTypes.Proceedings
-
-  override val title = Some(titl)
-  override val year  = Some(yr)
-}
-
-// Missing : techreport, unpublished
