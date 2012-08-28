@@ -2,13 +2,7 @@ package bibimbap
 package modules
 
 import akka.actor._
-import akka.pattern.ask
-import akka.util.Timeout
-import java.util.concurrent.{Executors, TimeoutException}
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.util.duration._
-import scala.concurrent.ExecutionContext
+import java.util.concurrent.TimeoutException
 
 import data._
 

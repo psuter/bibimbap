@@ -41,7 +41,7 @@ case class Search(terms: List[String])
 //  <= SearchResults(Nil  |  x :: Nil)
 case class SearchOne(terms: List[String])
 
-case class SearchResults(entries: List[data.SearchResult])
+case class SearchResults(entries: List[SearchResult])
 
 
 // Protocol from/to results module
@@ -55,8 +55,8 @@ case object ShowResults
 
 // => ReplaceResults(index, results)
 // <= CommandSuccess
-case class ReplaceResults(index: String, entries: List[data.SearchResult])
+case class ReplaceResults(index: String, entries: List[SearchResult])
 
 // => ImportedResult
 // ASYNC
-case class ImportedResult(res: data.SearchResult)
+case class ImportedResult(res: SearchResult)
