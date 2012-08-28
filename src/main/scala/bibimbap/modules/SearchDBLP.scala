@@ -142,6 +142,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
               None
             } else {
               var map = Map[String, MString](
+                "type"      -> BibTeXEntryTypes.Article.toString,
                 "authors"   -> authors,
                 "title"     -> title,
                 "journal"   -> jour.map(MString.fromJava).getOrElse(unknown),
