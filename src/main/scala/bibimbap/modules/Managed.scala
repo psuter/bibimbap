@@ -62,6 +62,20 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
   }
 
   private def doImport(res: SearchResult) {
+
+    def displayImported() {
+      try {
+        val clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
+        val stringSel = new StringSelection(res.entry.getKey)
+        clipboard.setContents(stringSel, stringSel)
+      } catch {
+        case e: java.awt.HeadlessException =>
+          console ! Warning("Could not store in clipboard: "+e.getMessage.trim)
+      }
+
+      console ! Success("Imported: \\cite{"+res.entry.getKey+"}")
+    }
+
     if (!res.sources.contains("managed") || res.sources.contains("modified")) {
       var action = "import"
 
@@ -106,31 +120,23 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
 
         fw.close
 
-        try {
-          val clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
-          val stringSel = new StringSelection(res.entry.getKey)
-          clipboard.setContents(stringSel, stringSel)
-        } catch {
-          case e: java.awt.HeadlessException =>
-            console ! Warning("Could not store in clipboard: "+e.getMessage.trim)
-        }
-
         // Inform search module that we imported this
         modules("search") ! ImportedResult(res)
 
-        console ! Success("Imported: \\cite{"+res.entry.getKey+"}")
+        displayImported()
       } else if(action == "cancel") {
         console ! Success("Aborted")
       } else if (action == "reload") {
         loadFile()
-        console ! Success("Managed file reloaded!")
+        console ! Success("File reloaded!")
       }
     } else {
-      console ! Success("Entry already in managed file as is!")
+      console ! Success("Entry already imported as is!")
+      displayImported()
     }
   }
 
   val helpItems = Map(
-    "import" -> HelpEntry("import <result>",  "Imports the <result>th item from the last search results into managed.bib")
+    "import" -> HelpEntry("import <result>",  "Imports the <result>th item from the last search results into managed bib file")
   )
 }

@@ -58,7 +58,7 @@ trait LuceneBackend {
     entry.journal.foreach(j => sb.append(j.toJava))
     entry.booktitle.foreach(b => sb.append(b.toJava))
     entry.year.foreach(sb.append(_))
-    
+
     doc.add(new Field("__blob", sb.toString, Field.Store.NO, Field.Index.ANALYZED))
 
     val config = new IndexWriterConfig(Version.LUCENE_36, analyzer)

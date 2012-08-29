@@ -6,7 +6,7 @@ trait Settings {
 
   def get(moduleName : String, key : String) : Option[String]
 
-  var colors = true
+  var colors = get("general", "colors").map(_ == "yes").getOrElse(true)
 }
 
 object DefaultSettings extends Settings {

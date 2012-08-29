@@ -53,7 +53,7 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, 
     val groupedByEntry = resultss.flatMap(_.entries).groupBy(_.entry.getKey).values
 
     val combined = for (res <- groupedByEntry) yield {
-      SearchResult(res.head.entry, res.flatMap(_.sources).toSet, res.map(_.relevance).min)
+      SearchResult(res.head.entry, res.flatMap(_.sources).toSet, res.map(_.relevance).max)
     }
 
     val sorted = combined.toList.sortBy(- _.relevance)
@@ -62,6 +62,6 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, 
   }
 
   val helpItems = Map(
-    "search" -> HelpEntry("search <terms..>", "Searches for <terms> using the various search modules")
+    "search" -> HelpEntry("search <terms..>", "Searches for <terms> using the various search providers")
   )
 }

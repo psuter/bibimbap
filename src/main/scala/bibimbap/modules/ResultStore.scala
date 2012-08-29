@@ -84,11 +84,11 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
       val spc = if ((i < 10) && (results.size > 10)) " " else ""
 
       val symbol = if (res.sources.contains("managed")) {
-        "m"
+        "\u2713"
       } else if (res.entry.isValid) {
         " "
       } else {
-        "!"
+        "?"
       }
 
       val color = if (res.entry.isValid) Console.GREEN else Console.RED
