@@ -7,6 +7,7 @@ import strings._
 import bibtex._
 
 import scala.io.Source
+import java.io.File
 
 class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends Module
                                                                                     with LuceneRAMBackend
@@ -18,14 +19,17 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
   val managedPath = settings("general", "bib.filename")
 
   override def receive: Receive = {
-    case msg @ OnStartup(os) =>
+    case msg @ OnStartup(os) => {
       super[Module].receive(msg)
 
-      val parser = new BibTeXParser(Source.fromFile(managedPath), console ! Error(_))
-
-      for (entry <- parser.entries) {
-        addEntry(entry, None)
+      val managedFile = new File(managedPath)
+      if(managedFile.exists && managedFile.isFile && managedFile.canRead) {
+        val parser = new BibTeXParser(Source.fromFile(managedFile), console ! Error(_))
+        for (entry <- parser.entries) {
+          addEntry(entry, None)
+        }
       }
+    }
 
     case Search(terms) =>
       sender ! search(terms)
