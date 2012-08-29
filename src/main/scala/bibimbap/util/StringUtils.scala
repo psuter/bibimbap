@@ -1,5 +1,5 @@
 package bibimbap
-package strings
+package util
 
 import org.apache.commons.lang3.{StringUtils=>ApacheStringUtils}
 import org.apache.commons.lang3.StringEscapeUtils

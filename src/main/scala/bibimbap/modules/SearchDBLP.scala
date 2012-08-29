@@ -5,6 +5,7 @@ import akka.actor._
 import bibtex._
 
 import strings._
+import util.StringUtils
 
 import scala.io.Source
 
@@ -185,8 +186,6 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
 
   private val FinalDot = """(.*)\.\s*""".r
   private def cleanupTitle(title : String) : String = {
-    import strings.StringUtils
-
     val trimmed = title.trim
     val noDot = trimmed match {
       case FinalDot(s) => s
