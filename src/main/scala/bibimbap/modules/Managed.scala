@@ -7,7 +7,9 @@ import strings._
 import bibtex._
 
 import scala.io.Source
-import java.io.File
+import java.io.{File, FileWriter}
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
 
 class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends Module
                                                                                     with LuceneRAMBackend
@@ -17,18 +19,25 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
   val source = "managed"
 
   val managedPath = settings("general", "bib.filename")
+  var lastModified = 0l
+  val managedFile = new File(managedPath)
+
+  def loadFile() {
+    if(managedFile.exists && managedFile.isFile && managedFile.canRead) {
+
+      lastModified = managedFile.lastModified()
+
+      val parser = new BibTeXParser(Source.fromFile(managedFile), console ! Error(_))
+      for (entry <- parser.entries) {
+        addEntry(entry)
+      }
+    }
+  }
 
   override def receive: Receive = {
     case msg @ OnStartup(os) => {
       super[Module].receive(msg)
-
-      val managedFile = new File(managedPath)
-      if(managedFile.exists && managedFile.isFile && managedFile.canRead) {
-        val parser = new BibTeXParser(Source.fromFile(managedFile), console ! Error(_))
-        for (entry <- parser.entries) {
-          addEntry(entry)
-        }
-      }
+      loadFile()
     }
 
     case Search(terms) =>
@@ -53,31 +62,72 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
   }
 
   private def doImport(res: SearchResult) {
+    if (!res.sources.contains("managed") || res.sources.contains("modified")) {
+      var action = "import"
 
-    addEntry(res.entry)
+      if (lastModified > 0 && lastModified < managedFile.lastModified) {
+        console ! Warning("Managed file has been modified in the meantime!")
+        var ask = true
+        while(ask) {
+          syncMessage[LineRead](console, ReadLineWithHandle("(i)mport (c)ancel (r)eload> ")) match {
+            case Some(LineRead("c")) =>
+              ask = false
+              action = "cancel"
+            case Some(LineRead("i")) =>
+              ask = false
+              action = "import"
+            case Some(LineRead("r")) =>
+              ask = false
+              action = "reload"
+            case Some(LineRead(_)) =>
+              console ! Error("wat?")
+              ask = true
+            case _ =>
+              action = "cancel"
+              ask = false
+          }
+        }
+      }
 
-    import java.io.{FileWriter,File}
+      if (action == "import") {
+        addEntry(res.entry)
 
-    val fw = new FileWriter(new File(managedPath), true)
-    fw.write(res.entry.toString)
-    fw.write("\n\n")
-    fw.close
+        import org.apache.lucene.index.IndexReader
+        val reader = IndexReader.open(index)
 
-    import java.awt.Toolkit
-    import java.awt.datatransfer.StringSelection
-    try {
-      val clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
-      val stringSel = new StringSelection(res.entry.getKey)
-      clipboard.setContents(stringSel, stringSel)
-    } catch {
-      case e: java.awt.HeadlessException =>
-        console ! Warning("Could not store in clipboard: "+e.getMessage.trim)
+        val entries = for (i <- 0 until reader.maxDoc if !reader.isDeleted(i); entry <- documentToEntry(reader.document(i))) yield  entry
+
+        val fw = new FileWriter(managedFile, false)
+
+        for (entry <- entries.sortBy(_.getKey)) {
+          fw.write(entry.toString)
+          fw.write("\n\n")
+        }
+
+        fw.close
+
+        try {
+          val clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
+          val stringSel = new StringSelection(res.entry.getKey)
+          clipboard.setContents(stringSel, stringSel)
+        } catch {
+          case e: java.awt.HeadlessException =>
+            console ! Warning("Could not store in clipboard: "+e.getMessage.trim)
+        }
+
+        // Inform search module that we imported this
+        modules("search") ! ImportedResult(res)
+
+        console ! Success("Imported: \\cite{"+res.entry.getKey+"}")
+      } else if(action == "cancel") {
+        console ! Success("Aborted")
+      } else if (action == "reload") {
+        loadFile()
+        console ! Success("Managed file reloaded!")
+      }
+    } else {
+      console ! Success("Entry already in managed file as is!")
     }
-
-    // Inform search module that we imported this
-    modules("search") ! ImportedResult(res)
-
-    console ! Success("Imported: \\cite{"+res.entry.getKey+"}")
   }
 
   val helpItems = Map(

@@ -80,7 +80,7 @@ trait LuceneBackend {
     docs
   }
 
-  private def documentToSearchResult(document : Document, score: Double) : Option[SearchResult] = {
+  def documentToEntry(document: Document): Option[BibTeXEntry] = {
     import scala.collection.JavaConversions._
     val em : Map[String,MString] = document.getFields().collect{
       case f if !f.name.startsWith("__") =>
@@ -95,9 +95,11 @@ trait LuceneBackend {
 
     val kind = BibTeXEntryTypes.withName(document.get("__type"))
 
-    for(entry <- BibTeXEntry.fromEntryMap(kind, optKey, em, console ! Error(_))) yield {
-      SearchResult(entry, Set(source), score)
-    }
+    BibTeXEntry.fromEntryMap(kind, optKey, em, console ! Error(_))
+  }
+
+  private def documentToSearchResult(document : Document, score: Double) : Option[SearchResult] = {
+    documentToEntry(document).map(entry => SearchResult(entry, Set(source), score))
   }
 
   def clear() = {
