@@ -98,7 +98,6 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
   val helpItems = Map(
     "list"   -> HelpEntry("list",             "Displays the current list of results."),
-    "import" -> HelpEntry("import <result>",  "Imports the <result>th item from the last search results into managed.bib"),
     "show"   -> HelpEntry("show <result>",    "Displays the bib entry for the <results>th search result.")
   )
 }
