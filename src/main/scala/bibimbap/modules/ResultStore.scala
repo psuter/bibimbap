@@ -81,7 +81,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
   private def displayResults() {
     var i = 0
     for (res <- results) {
-      val spc = if (i < 10) " " else ""
+      val spc = if ((i < 10) && (results.size > 10)) " " else ""
 
       val symbol = if (res.sources.contains("managed")) {
         "m"
@@ -95,7 +95,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
       val status = color+Console.BOLD+symbol+Console.RESET
 
-      console ! Info("["+i+spc+" "+status+"] "+res.entry.inlineString)
+      console ! Info(status+" "+spc+"["+i+"] "+res.entry.inlineString)
       i += 1
     }
     if (results.isEmpty) {
