@@ -31,8 +31,8 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       sender ! search(terms)
 
     case Command2("import", ind) =>
-      syncMessage[List[SearchResult]](modules("results"), GetResults(ind)) match {
-        case Some(rs) =>
+      syncMessage[SearchResults](modules("results"), GetResults(ind)) match {
+        case Some(SearchResults(rs)) =>
           for (r <- rs) {
             doImport(r)
           }
@@ -42,7 +42,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       sender ! CommandSuccess
 
     case ImportedResult(res) =>
-      onImport(res)
+      addEntry(res.entry, res.link)
       // no message back
 
     case msg =>

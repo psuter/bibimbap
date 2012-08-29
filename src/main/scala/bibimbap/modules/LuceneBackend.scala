@@ -140,7 +140,4 @@ trait LuceneSearchProvider extends SearchProvider {
     }
   }
 
-  override def onImport(res: SearchResult) {
-    addEntry(res.entry, res.link)
-  }
 }
