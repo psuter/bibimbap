@@ -26,12 +26,14 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
   def startModules() {
     import bibimbap.modules._
 
-    val managed = context.actorOf(Props(new Managed(self, console, settings)), name = "managed");
+    val managed      = context.actorOf(Props(new Managed(self, console, settings)),      name = "managed");
+    val searchBibtex = context.actorOf(Props(new SearchBibtex(self, console, settings)), name = "searchBibtex");
 
     val searchProviders = List(
       context.actorOf(Props(new SearchLocal(self, console, settings)), name = "searchLocal"),
       context.actorOf(Props(new SearchDBLP(self, console, settings)), name = "searchRemote"),
-      managed
+      managed,
+      searchBibtex
     )
 
     modules = Map(
@@ -39,7 +41,8 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
       "search"  -> context.actorOf(Props(new Search(self, console, settings, searchProviders)), name = "search"),
       "results" -> context.actorOf(Props(new ResultStore(self, console, settings)),             name = "results"),
       "wizard"  -> context.actorOf(Props(new Wizard(self, console, settings)),                  name = "wizard"),
-      "managed" -> managed
+      "managed" -> managed,
+      "bibtex"  -> searchBibtex
     )
 
   }
