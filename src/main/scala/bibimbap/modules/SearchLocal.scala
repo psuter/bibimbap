@@ -15,6 +15,6 @@ class SearchLocal(val repl: ActorRef, val console: ActorRef, val settings: Setti
   protected val cacheDir = new File(settings("general", "dir.cache"))
 
   override def onImport(res: SearchResult) {
-    addEntry(res.entry, res.link)
+    addEntry(res.entry)
   }
 }

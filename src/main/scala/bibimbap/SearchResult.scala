@@ -1,3 +1,3 @@
 package bibimbap
 
-case class SearchResult(entry: bibtex.BibTeXEntry, link: Option[String], sources: Set[String], relevance: Double)
+case class SearchResult(entry: bibtex.BibTeXEntry, sources: Set[String], relevance: Double)

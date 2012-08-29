@@ -38,16 +38,15 @@ trait LuceneBackend {
   def searchLucene(query: String): List[SearchResult] =
     searchEntries(query).flatMap{ case (doc, score) => documentToSearchResult(doc, score) }.toList
 
-  def addEntry(entry : BibTeXEntry, link : Option[String]) : Unit = {
+  def addEntry(entry : BibTeXEntry) : Unit = {
     val doc = new Document()
 
     for((k,v) <- entry.entryMap) {
       doc.add(new Field(k, v.toJava, Field.Store.YES, Field.Index.NO))
     }
 
-    for(url <- link) {
-      doc.add(new Field("url", url, Field.Store.YES, Field.Index.NO))
-    }
+    doc.add(new Field("__key",  entry.key.getOrElse(""), Field.Store.YES, Field.Index.NO))
+    doc.add(new Field("__type", entry.tpe.toString, Field.Store.YES, Field.Index.NO))
 
     val sb = new StringBuilder()
     entry.title.foreach(sb.append(_))
@@ -60,7 +59,7 @@ trait LuceneBackend {
     entry.booktitle.foreach(b => sb.append(b.toJava))
     entry.year.foreach(sb.append(_))
     
-    doc.add(new Field("blob", sb.toString, Field.Store.NO, Field.Index.ANALYZED))
+    doc.add(new Field("__blob", sb.toString, Field.Store.NO, Field.Index.ANALYZED))
 
     val config = new IndexWriterConfig(Version.LUCENE_36, analyzer)
     val writer = new IndexWriter(index, config)
@@ -69,7 +68,7 @@ trait LuceneBackend {
   }
 
   private def searchEntries(query : String) : Iterable[(Document, Double)] = {
-    val q = new QueryParser(Version.LUCENE_36, "blob", analyzer).parse(query)
+    val q = new QueryParser(Version.LUCENE_36, "__blob", analyzer).parse(query)
     val hitsPerPage = 10
     val reader = IndexReader.open(index)
     val searcher = new IndexSearcher(reader)
@@ -83,13 +82,21 @@ trait LuceneBackend {
 
   private def documentToSearchResult(document : Document, score: Double) : Option[SearchResult] = {
     import scala.collection.JavaConversions._
-    val em : Map[String,MString] = document.getFields().map(f =>
-      (f.name -> MString.fromJava(f.stringValue))
-    ).toMap
+    val em : Map[String,MString] = document.getFields().collect{
+      case f if !f.name.startsWith("__") =>
+        (f.name -> MString.fromJava(f.stringValue))
+    }.toMap
 
-    for(entry <- BibTeXEntry.fromEntryMap(em, console ! Error(_))) yield {
-      val url = Option(document.get("url"))
-      SearchResult(entry, url, Set(source), score)
+    val optKey = document.get("__key") match {
+      case null => None
+      case ""   => None
+      case s    => Some(s)
+    }
+
+    val kind = BibTeXEntryTypes.withName(document.get("__type"))
+
+    for(entry <- BibTeXEntry.fromEntryMap(kind, optKey, em, console ! Error(_))) yield {
+      SearchResult(entry, Set(source), score)
     }
   }
 

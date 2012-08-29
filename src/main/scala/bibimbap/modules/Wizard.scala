@@ -30,8 +30,10 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
   }
 
   def doEdit(res: SearchResult): SearchResult = {
-    val entry = res.entry;
-    var map = entry.entryMap
+    val entry   = res.entry
+    var map     = entry.entryMap
+    var key     = entry.key
+    var kind    = entry.tpe
 
     val allStdFields     = BibTeXEntryTypes.allStdFields
     val meaningFulFields = entry.stdFields
@@ -111,7 +113,7 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
       console ! Success("Edit cancelled!")
       res
     } else {
-      BibTeXEntry.fromEntryMap(map, console ! Error(_)) match {
+      BibTeXEntry.fromEntryMap(kind, key, map, console ! Error(_)) match {
         case Some(entry) =>
           console ! Success("Entry edited!")
           res.copy(entry = entry)

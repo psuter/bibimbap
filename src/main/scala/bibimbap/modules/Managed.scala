@@ -26,7 +26,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       if(managedFile.exists && managedFile.isFile && managedFile.canRead) {
         val parser = new BibTeXParser(Source.fromFile(managedFile), console ! Error(_))
         for (entry <- parser.entries) {
-          addEntry(entry, None)
+          addEntry(entry)
         }
       }
     }
@@ -46,14 +46,16 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       sender ! CommandSuccess
 
     case ImportedResult(res) =>
-      addEntry(res.entry, res.link)
-      // no message back
+      // NOOP: we sent this.
 
     case msg =>
       super[Module].receive(msg)
   }
 
   private def doImport(res: SearchResult) {
+
+    addEntry(res.entry)
+
     import java.io.{FileWriter,File}
 
     val fw = new FileWriter(new File(managedPath), true)

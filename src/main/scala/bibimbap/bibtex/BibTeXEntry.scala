@@ -73,6 +73,7 @@ case class InconsistentBibTeXEntry(msg: String) extends Exception(msg)
 // This datatypes and all the following ones assume crossrefs have been
 // "resolved" into all entries.
 case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
+                       key: Option[String],
                        fields: Map[String, MString],
                        seqFields: Map[String, Seq[MString]]) extends Serializable {
 
@@ -105,6 +106,8 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
   val url          : Option[MString] = fields.get("url")
   val volume       : Option[MString] = fields.get("volume")
   val year         : Option[MString] = fields.get("year")
+  val link         : Option[MString] = fields.get("link")
+  val doi          : Option[MString] = fields.get("doi")
 
   lazy val entryMap = {
     Map("type" -> MString.fromJava(tpe.toString)) ++ fields ++ seqFields.mapValues(seq => MString.fromJava(seq.map(_.toJava).mkString(" and ")))
@@ -119,7 +122,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
     missingReqFields.isEmpty
   }
 
-  def getKey: String = {
+  def getKey: String = key.getOrElse {
     val commonWords = Set("", "in", "the", "a", "an", "of", "for", "and", "or", "by", "on", "with")
 
     def isBibTeXFriendly(c : Char) : Boolean = (
@@ -255,10 +258,8 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 }
 
 object BibTeXEntry {
-  def fromEntryMap(map : Map[String,MString], onError: String => Unit) : Option[BibTeXEntry] = {
+  def fromEntryMap(tpe: BibTeXEntryTypes.BibTeXEntryType, key: Option[String], map : Map[String,MString], onError: String => Unit) : Option[BibTeXEntry] = {
     try {
-      val tpe            = BibTeXEntryTypes.withName(map.get("type").map(_.toJava).getOrElse(throw new InconsistentBibTeXEntry("Missing type information")))
-
       val isSeqField = Set("authors", "editors")
 
       var fields    = Map[String, MString]()
@@ -273,7 +274,7 @@ object BibTeXEntry {
         }
       }
 
-      Some(BibTeXEntry(tpe, fields, seqFields))
+      Some(BibTeXEntry(tpe, key, fields, seqFields))
     } catch {
       case InconsistentBibTeXEntry(msg) =>
         onError(msg)

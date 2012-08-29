@@ -87,6 +87,8 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
       case _ => 0d
     }
 
+    val optKey = None;
+
     (record \ "title") match {
       case obj : JObject => {
         val authors : MString = ((obj \ "dblp:authors" \ "dblp:author") match {
@@ -120,16 +122,17 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
               case _ => (None, None, None)
             }
 
-            val entry = BibTeXEntry.fromEntryMap(Map[String, MString](
-                "type"      -> BibTeXEntryTypes.Proceedings.toString,
+            val entry = BibTeXEntry.fromEntryMap(BibTeXEntryTypes.InProceedings, optKey,
+              Map[String, MString](
                 "title"     -> title,
                 "authors"   -> authors,
                 "booktitle" -> venue.map(MString.fromJava).getOrElse(unknown),
                 "year"      -> yr2yr(venueYear).getOrElse(year.getOrElse(unknown)),
                 "pages"     -> pages.map(MString.fromJava).getOrElse(unknown)
-            ), console ! Error(_))
+              ), console ! Error(_))
 
-            entry.map(SearchResult(_, link, Set(source), score))
+            // ADD Link
+            entry.map(SearchResult(_, Set(source), score))
           }
 
           case JString("article") => {
@@ -147,7 +150,6 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
               None
             } else {
               var map = Map[String, MString](
-                "type"      -> BibTeXEntryTypes.Article.toString,
                 "authors"   -> authors,
                 "title"     -> title,
                 "journal"   -> jour.map(MString.fromJava).getOrElse(unknown),
@@ -164,7 +166,8 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
                 map += "pages" -> MString.fromJava(pgs.get)
               }
 
-              BibTeXEntry.fromEntryMap(map, console ! Error(_)).map(SearchResult(_, link, Set(source), score))
+              //TODO: Add Link
+              BibTeXEntry.fromEntryMap(BibTeXEntryTypes.Article, optKey, map, console ! Error(_)).map(SearchResult(_, Set(source), score))
             }
           }
 
