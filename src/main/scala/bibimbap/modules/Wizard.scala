@@ -30,19 +30,39 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
   }
 
   def doEdit(res: SearchResult): SearchResult = {
-    console ! Out("Editing: ")
+    val entry = res.entry;
+    var map = entry.entryMap
 
-    var map = res.entry.entryMap
+    val allStdFields     = BibTeXEntryTypes.allStdFields
+    val meaningFulFields = entry.stdFields
 
-    def display(map: Map[String, MString]) {
-      for ((k, v) <- map) {
-        console ! Out("  %12s = %s".format(k, v))
+    def display() {
+      console ! Out(" Entry type: "+entry.tpe)
+      console ! Out(" Required fields:")
+      for (f <- entry.requiredFields.flatMap(_.toFields)) {
+        if (map contains f) {
+          console ! Out(("   "+Console.BOLD+"%12s"+Console.RESET+" = %s").format(f, map(f)))
+        } else {
+          console ! Out(("   "+Console.RED+Console.BOLD+"%12s"+Console.RESET+" = %s").format(f, "<missing>"))
+        }
+      }
+      console ! Out("")
+      console ! Out(" Optional fields for "+entry.tpe+":")
+      for (f <- entry.optionalFields) {
+        console ! Out(("   "+Console.BOLD+"%12s"+Console.RESET+" = %s").format(f, map.getOrElse(f, "<missing>")))
+      }
+
+      val extraFields = map.keySet -- allStdFields -- Set("type")
+      if (!extraFields.isEmpty) {
+        console ! Out("")
+        console ! Out(" Extra fields:")
+        for (f <- extraFields) {
+          console ! Out(("   "+Console.BOLD+"%12s"+Console.RESET+" = %s").format(f, map(f)))
+        }
       }
     }
 
-    display(map)
-
-    console ! Out("What field to edit (d to display, c to cancel)?")
+    display()
 
     var continue = true;
     var cancel   = false;
@@ -56,9 +76,9 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
           cancel = true
 
         case Some(LineRead("d")) =>
-          display(map)
+          display()
 
-        case Some(LineRead(field)) if map contains field =>
+        case Some(LineRead(field)) =>
           val newValue = syncMessage[LineRead](console, ReadLineWithHandle("edit value> ")) match {
             case Some(LineRead("")) =>
               None
@@ -70,13 +90,15 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
               None
           }
 
-          if (newValue.isEmpty) {
-            map -= field
-          } else {
-            map += field -> newValue.get
-          }
-        case Some(LineRead(field)) =>
-          console ! Error("Unknown field: "+field)
+            if (newValue.isEmpty) {
+              map -= field
+            } else {
+              if (!allStdFields(field) || meaningFulFields(field)) {
+                map += field -> newValue.get
+              } else {
+                console ! Error("Invalid field "+field+" for entry of type "+entry.tpe)
+              }
+            }
         case _ =>
       }
     }

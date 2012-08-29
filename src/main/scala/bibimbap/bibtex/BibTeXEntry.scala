@@ -22,6 +22,8 @@ object BibTeXEntryTypes extends Enumeration {
   case class OneOf(fs: String*) {
     val set = fs.toSet
     def satisfiedBy(fields: Set[String]): Boolean = (set -- fields).isEmpty
+
+    def toFields = fs.toList
   }
 
   import language.implicitConversions
@@ -35,12 +37,12 @@ object BibTeXEntryTypes extends Enumeration {
     InCollection    -> Set("authors", "title", "booktitle", "year"),
     InProceedings   -> Set("authors", "title", "booktitle", "year"),
     Manual          -> Set("title"),
-    MastersThesis   -> Set("author", "title", "school", "year"),
+    MastersThesis   -> Set("authors", "title", "school", "year"),
     Misc            -> Set(),
-    PhDThesis       -> Set("author", "title", "school", "year"),
+    PhDThesis       -> Set("authors", "title", "school", "year"),
     Proceedings     -> Set("title", "year"),
-    TechReport      -> Set("author", "title", "institution", "year"),
-    Unpublished     -> Set("author", "title", "note")
+    TechReport      -> Set("authors", "title", "institution", "year"),
+    Unpublished     -> Set("authors", "title", "note")
   ).withDefaultValue(Set())
 
   val optionalFieldsFor = Map(
@@ -59,7 +61,7 @@ object BibTeXEntryTypes extends Enumeration {
     Unpublished     -> Set("month", "year", "key")
   ).withDefaultValue(Set())
 
-  val allStdFields = Set("address", "abstract", "annote", "author",
+  val allStdFields = Set("address", "abstract", "annote", "authors",
       "booktitle", "chapter", "crossref", "edition", "editors", "eprint",
       "howpublished", "institution", "journal", "key", "month", "note", "number",
       "organization", "pages", "publisher", "school", "series", "title", "type",
@@ -74,8 +76,9 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
                        fields: Map[String, MString],
                        seqFields: Map[String, Seq[MString]]) extends Serializable {
 
-  val requiredFields = BibTeXEntryTypes.requiredFieldsFor(tpe)
-  val optionalFields = BibTeXEntryTypes.optionalFieldsFor(tpe)
+  lazy val requiredFields = BibTeXEntryTypes.requiredFieldsFor(tpe)
+  lazy val optionalFields = BibTeXEntryTypes.optionalFieldsFor(tpe)
+  lazy val stdFields      = requiredFields.flatMap(_.toFields) ++ optionalFields
 
   // convenience fields
   val address      : Option[MString] = fields.get("address")
@@ -107,8 +110,10 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
     Map("type" -> MString.fromJava(tpe.toString)) ++ fields ++ seqFields.mapValues(seq => MString.fromJava(seq.map(_.toJava).mkString(" and ")))
   }
 
+  val allFields = fields.keySet ++ seqFields.keySet
+
+
   def isValid: Boolean = {
-    val allFields = fields.keySet ++ seqFields.keySet
     val missingReqFields = requiredFields.filter(!_.satisfiedBy(allFields))
 
     missingReqFields.isEmpty
