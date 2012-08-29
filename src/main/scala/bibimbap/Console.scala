@@ -22,9 +22,13 @@ class Console(settings: Settings, historyFileName: String) extends Actor {
 
   def receive = {
     case ReadLine =>
+      out("")
       sender ! LineRead(reader.readLine(defaultHandle))
+      out("")
     case ReadLineWithHandle(handle) =>
+      out("")
       sender ! LineRead(reader.readLine(handle))
+      out("")
     case Out(msg: String) =>
       out(msg)
     case Info(msg: String) =>

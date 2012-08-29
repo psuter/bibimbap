@@ -36,7 +36,7 @@ trait LuceneBackend {
   }
 
   def searchLucene(query: String): List[SearchResult] =
-    searchEntries(query).flatMap(documentToSearchResult).toList
+    searchEntries(query).flatMap{ case (doc, score) => documentToSearchResult(doc, score) }.toList
 
   def addEntry(entry : BibTeXEntry, link : Option[String]) : Unit = {
     val doc = new Document()
@@ -68,7 +68,7 @@ trait LuceneBackend {
     writer.close()
   }
 
-  private def searchEntries(query : String) : Iterable[Document] = {
+  private def searchEntries(query : String) : Iterable[(Document, Double)] = {
     val q = new QueryParser(Version.LUCENE_36, "blob", analyzer).parse(query)
     val hitsPerPage = 10
     val reader = IndexReader.open(index)
@@ -76,12 +76,12 @@ trait LuceneBackend {
     val collector = TopScoreDocCollector.create(hitsPerPage, true)
     searcher.search(q, collector)
     val hits : Array[ScoreDoc] = collector.topDocs.scoreDocs
-    val docs = hits.map(hit => searcher.doc(hit.doc))
+    val docs = hits.map(hit => (searcher.doc(hit.doc), hit.score.toDouble))
     searcher.close()
     docs
   }
 
-  private def documentToSearchResult(document : Document) : Option[SearchResult] = {
+  private def documentToSearchResult(document : Document, score: Double) : Option[SearchResult] = {
     import scala.collection.JavaConversions._
     val em : Map[String,MString] = document.getFields().map(f =>
       (f.name -> MString.fromJava(f.stringValue))
@@ -89,7 +89,7 @@ trait LuceneBackend {
 
     for(entry <- BibTeXEntry.fromEntryMap(em, console ! Error(_))) yield {
       val url = Option(document.get("url"))
-      SearchResult(entry, url, Set(source))
+      SearchResult(entry, url, Set(source), score)
     }
   }
 

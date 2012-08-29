@@ -83,12 +83,19 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     for (res <- results) {
       val spc = if (i < 10) " " else ""
 
-      val colSourceImported  = if (res.sources.contains("managed"))  Console.GREEN+Console.BOLD+"m"+Console.RESET else " "
-      val colInvalid         = if (!res.entry.isValid) Console.RED+Console.BOLD+"!"+Console.RESET else " "
+      val symbol = if (res.sources.contains("managed")) {
+        "m"
+      } else if (res.entry.isValid) {
+        " "
+      } else {
+        "!"
+      }
 
-      val extraCols = colSourceImported+colInvalid
+      val color = if (res.entry.isValid) Console.GREEN else Console.RED
 
-      console ! Info("["+i+spc+" "+extraCols+"] "+res.entry.inlineString)
+      val status = color+Console.BOLD+symbol+Console.RESET
+
+      console ! Info("["+i+spc+" "+status+"] "+res.entry.inlineString)
       i += 1
     }
     if (results.isEmpty) {

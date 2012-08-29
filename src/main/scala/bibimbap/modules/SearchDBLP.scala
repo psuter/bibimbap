@@ -82,6 +82,11 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
     def yr2yr(year : Option[String]) : Option[MString] =
       year.map(str => MString.fromJava(str.trim))
 
+    val score = (record \ "@score") match {
+      case JInt(x) => x/200d
+      case _ => 0d
+    }
+
     (record \ "title") match {
       case obj : JObject => {
         val authors : MString = ((obj \ "dblp:authors" \ "dblp:author") match {
@@ -124,7 +129,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
                 "pages"     -> pages.map(MString.fromJava).getOrElse(unknown)
             ), console ! Error(_))
 
-            entry.map(SearchResult(_, link, Set(source)))
+            entry.map(SearchResult(_, link, Set(source), score))
           }
 
           case JString("article") => {
@@ -159,7 +164,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
                 map += "pages" -> MString.fromJava(pgs.get)
               }
 
-              BibTeXEntry.fromEntryMap(map, console ! Error(_)).map(SearchResult(_, link, Set(source)))
+              BibTeXEntry.fromEntryMap(map, console ! Error(_)).map(SearchResult(_, link, Set(source), score))
             }
           }
 
