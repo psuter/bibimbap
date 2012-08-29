@@ -108,6 +108,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
   val year         : Option[MString] = fields.get("year")
   val link         : Option[MString] = fields.get("link")
   val doi          : Option[MString] = fields.get("doi")
+  val keyField     : Option[MString] = fields.get("key")
 
   lazy val entryMap = {
     Map("type" -> MString.fromJava(tpe.toString)) ++ fields ++ seqFields.mapValues(seq => MString.fromJava(seq.map(_.toJava).mkString(" and ")))
@@ -243,7 +244,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
     printOptField("edition",        edition)
     printOptField("institution",    institution)
     printOptField("howpublished",   howpublished)
-    printOptField("key",            Some(key))
+    printOptField("key",            keyField)
     printOptField("organization",   organization)
     printOptField("publisher",      publisher)
     printOptField("school",         school)
@@ -260,6 +261,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 object BibTeXEntry {
   def fromEntryMap(tpe: BibTeXEntryTypes.BibTeXEntryType, key: Option[String], map : Map[String,MString], onError: String => Unit) : Option[BibTeXEntry] = {
     try {
+      println("Entry map : " + map)
       val isSeqField = Set("authors", "editors")
 
       var fields    = Map[String, MString]()
