@@ -79,7 +79,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
     if (!res.sources.contains("managed") || res.sources.contains("modified")) {
       var action = "import"
 
-      if (lastModified > 0 && lastModified < managedFile.lastModified) {
+      if (lastModified < managedFile.lastModified) {
         console ! Warning("Managed file has been modified in the meantime!")
         var ask = true
         while(ask) {
