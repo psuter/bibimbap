@@ -1,8 +1,8 @@
 package bibimbap
 package bibtex
 
-import bibimbap.data._
-import bibimbap.strings._
+import bibtex._
+import strings._
 
 import scala.io.Source
 import scala.io.Position

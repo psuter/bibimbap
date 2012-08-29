@@ -4,7 +4,7 @@ package modules
 import akka.actor._
 import java.util.concurrent.TimeoutException
 
-import data._
+import bibtex._
 
 class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, val searchProviders: List[ActorRef]) extends Module {
   val name = "search"

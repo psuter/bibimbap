@@ -1,5 +1,5 @@
 package bibimbap
-package data
+package bibtex
 
 import bibimbap.strings._
 

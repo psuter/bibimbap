@@ -2,7 +2,7 @@ package bibimbap
 package modules
 
 import akka.actor._
-import data._
+import bibtex._
 import strings._
 
 class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends Module {

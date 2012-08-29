@@ -1,7 +1,6 @@
 package bibimbap
-package modules
 
-import data._
+import bibtex._
 import strings._
 
 import akka.actor.ActorRef
@@ -41,7 +40,7 @@ trait LuceneBackend {
 
   def addEntry(entry : BibTeXEntry, link : Option[String]) : Unit = {
     val doc = new Document()
-    
+
     for((k,v) <- entry.entryMap) {
       doc.add(new Field(k, v.toJava, Field.Store.YES, Field.Index.NO))
     }

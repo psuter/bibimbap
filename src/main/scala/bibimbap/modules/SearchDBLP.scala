@@ -2,7 +2,7 @@ package bibimbap
 package modules
 
 import akka.actor._
-import data._
+import bibtex._
 
 import strings._
 

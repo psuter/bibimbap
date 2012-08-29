@@ -1,6 +1,5 @@
 package bibimbap
 
-import data._
 import akka.actor._
 
 trait SearchProvider extends Actor {

@@ -28,7 +28,7 @@ class Console(settings: Settings, historyFileName: String) extends Actor {
     case Out(msg: String) =>
       out(msg)
     case Info(msg: String) =>
-      out("      "+msg)
+      out("  "+msg)
     case Warning(msg: String) =>
       out(Console.YELLOW + "  [w]" + Console.RESET + " "+msg)
     case Error(msg: String) =>
