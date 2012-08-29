@@ -261,7 +261,6 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 object BibTeXEntry {
   def fromEntryMap(tpe: BibTeXEntryTypes.BibTeXEntryType, key: Option[String], map : Map[String,MString], onError: String => Unit) : Option[BibTeXEntry] = {
     try {
-      println("Entry map : " + map)
       val isSeqField = Set("authors", "editors")
 
       var fields    = Map[String, MString]()
