@@ -5,6 +5,8 @@ trait Settings {
     get(moduleName, key).get
 
   def get(moduleName : String, key : String) : Option[String]
+
+  var colors = true
 }
 
 object DefaultSettings extends Settings {

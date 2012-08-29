@@ -36,20 +36,23 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
     val allStdFields     = BibTeXEntryTypes.allStdFields
     val meaningFulFields = entry.stdFields
 
+    def inBold(str: String): String    = if (settings.colors) Console.BOLD+str+Console.RESET else str
+    def inRedBold(str: String): String = if (settings.colors) Console.BOLD+Console.RED+str+Console.RESET else str
+
     def display() {
       console ! Out(" Entry type: "+entry.tpe)
       console ! Out(" Required fields:")
       for (f <- entry.requiredFields.flatMap(_.toFields)) {
         if (map contains f) {
-          console ! Out(("   "+Console.BOLD+"%12s"+Console.RESET+" = %s").format(f, map(f)))
+          console ! Out(("   "+inBold("%12s")+" = %s").format(f, map(f)))
         } else {
-          console ! Out(("   "+Console.RED+Console.BOLD+"%12s"+Console.RESET+" = %s").format(f, "<missing>"))
+          console ! Out(("   "+inRedBold("%12s")+" = %s").format(f, "<missing>"))
         }
       }
       console ! Out("")
       console ! Out(" Optional fields for "+entry.tpe+":")
       for (f <- entry.optionalFields) {
-        console ! Out(("   "+Console.BOLD+"%12s"+Console.RESET+" = %s").format(f, map.getOrElse(f, "<missing>")))
+        console ! Out(("   "+inBold("%12s")+" = %s").format(f, map.getOrElse(f, "<missing>")))
       }
 
       val extraFields = map.keySet -- allStdFields -- Set("type")
@@ -57,7 +60,7 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
         console ! Out("")
         console ! Out(" Extra fields:")
         for (f <- extraFields) {
-          console ! Out(("   "+Console.BOLD+"%12s"+Console.RESET+" = %s").format(f, map(f)))
+          console ! Out(("   "+inBold("%12s")+" = %s").format(f, map(f)))
         }
       }
     }

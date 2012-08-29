@@ -93,7 +93,11 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
       val color = if (res.entry.isValid) Console.GREEN else Console.RED
 
-      val status = color+Console.BOLD+symbol+Console.RESET
+      val status = if (settings.colors) {
+        color+Console.BOLD+symbol+Console.RESET
+      } else {
+        symbol
+      }
 
       console ! Info(status+" "+spc+"["+i+"] "+res.entry.inlineString)
       i += 1
