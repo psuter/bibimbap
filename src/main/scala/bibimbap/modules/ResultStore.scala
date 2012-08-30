@@ -83,7 +83,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     for (res <- results) {
       val spc = if ((i < 10) && (results.size > 10)) " " else ""
 
-      val symbol = if (res.sources.contains("managed")) {
+      val symbol = if (res.isManaged) {
         "\u2713"
       } else if (res.entry.isValid) {
         " "
@@ -91,7 +91,15 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
         "?"
       }
 
-      val color = if (res.entry.isValid) Console.GREEN else Console.RED
+      val color = if (res.entry.isValid) {
+        if (res.isEdited) {
+          Console.YELLOW
+        } else {
+          Console.GREEN
+        }
+      } else {
+        Console.RED
+      }
 
       val status = if (settings.colors) {
         color+Console.BOLD+symbol+Console.RESET

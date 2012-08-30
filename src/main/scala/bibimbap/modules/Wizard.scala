@@ -115,8 +115,13 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
     } else {
       BibTeXEntry.fromEntryMap(kind, key, map, console ! Error(_)) match {
         case Some(entry) =>
-          console ! Success("Entry edited!")
-          res.copy(entry = entry)
+          if (entry != res.entry) {
+            console ! Success("Entry edited!")
+            res.copy(entry = entry, isEdited = true)
+          } else {
+            console ! Success("Entry not modified!")
+            res
+          }
         case None =>
           console ! Error("Could not save entry :(")
           res

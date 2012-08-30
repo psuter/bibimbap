@@ -26,6 +26,9 @@ class SearchBibtex(val repl: ActorRef, val console: ActorRef, val settings: Sett
     case Search(terms) =>
       sender ! search(terms)
 
+    case ImportedResult(res) =>
+      // We don't care
+
     case msg =>
       super[Module].receive(msg)
   }

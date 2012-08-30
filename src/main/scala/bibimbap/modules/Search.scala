@@ -53,7 +53,11 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, 
     val groupedByEntry = resultss.flatMap(_.entries).groupBy(_.entry.getKey).values
 
     val combined = for (res <- groupedByEntry) yield {
-      SearchResult(res.head.entry, res.flatMap(_.sources).toSet, res.map(_.relevance).max)
+      SearchResult(res.head.entry,
+                   res.flatMap(_.sources).toSet,
+                   res.map(_.relevance).max,
+                   res.exists(_.isEdited),
+                   res.exists(_.isManaged))
     }
 
     val sorted = combined.toList.sortBy(- _.relevance)

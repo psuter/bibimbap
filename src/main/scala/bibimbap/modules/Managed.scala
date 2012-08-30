@@ -25,6 +25,8 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
 
   def computeManagedHash(): Option[String] = FileUtils.md5(managedFile)
 
+  override def searchLucene(query: String) = super.searchLucene(query).map(_.copy(isManaged = true))
+
   def loadFile() {
     if(managedFile.exists && managedFile.isFile && managedFile.canRead) {
 
@@ -125,7 +127,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
   private def doDelete(res: SearchResult): SearchResult = {
     var newRes = res
 
-    if (res.sources.contains("managed")) {
+    if (res.isManaged) {
       val action = integrityCheck()
 
       if (action == "proceed") {
@@ -133,7 +135,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
 
         writeManagedFile()
 
-        newRes = newRes.copy(sources = newRes.sources - "managed")
+        newRes = newRes.copy(isManaged = false)
 
         console ! Success("Entry no longer managed!")
 
@@ -166,7 +168,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       console ! Success("Entry key: \\cite{"+res.entry.getKey+"}")
     }
 
-    if (!res.sources.contains("managed") || res.sources.contains("modified")) {
+    if (!res.isManaged || res.isEdited) {
       val action = integrityCheck()
 
       if (action == "proceed") {
@@ -174,7 +176,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
 
         writeManagedFile()
 
-        newRes = newRes.copy(sources = newRes.sources + "managed")
+        newRes = newRes.copy(isEdited = false, isManaged = true)
 
         // Inform search module that we imported this
         modules("search") ! ImportedResult(newRes)
