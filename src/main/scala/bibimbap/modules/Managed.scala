@@ -77,7 +77,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
           console ! Warning("Could not store in clipboard: "+e.getMessage.trim)
       }
 
-      console ! Success("Imported: \\cite{"+res.entry.getKey+"}")
+      console ! Success("Entry key: \\cite{"+res.entry.getKey+"}")
     }
 
     if (!res.sources.contains("managed") || res.sources.contains("modified")) {
@@ -123,6 +123,8 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
         }
 
         fw.close
+
+        managedHash = computeManagedHash()
 
         newRes = newRes.copy(sources = newRes.sources + "managed")
 

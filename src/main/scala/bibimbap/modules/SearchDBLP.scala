@@ -27,8 +27,8 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
       val url = new URL(searchURLPrefix + pattern + searchURLPostfix)
       // info("DBLP query URL : [" + url + "].")
       val urlCon = url.openConnection()
-      urlCon.setConnectTimeout(3000)
-      urlCon.setReadTimeout(3000)
+      urlCon.setConnectTimeout(10000)
+      urlCon.setReadTimeout(10000)
       val content = Source.fromInputStream(urlCon.getInputStream)
       val text = content.getLines.mkString(" ")
 
