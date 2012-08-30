@@ -195,6 +195,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
   }
 
   val helpItems = Map(
+    "delete" -> HelpEntry("delete <result>",  "Delete the <result>th from the managed file"),
     "import" -> HelpEntry("import <result>",  "Imports the <result>th item from the last search results into managed bib file")
   )
 }
