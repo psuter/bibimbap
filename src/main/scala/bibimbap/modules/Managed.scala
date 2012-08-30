@@ -31,9 +31,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       managedHash  = computeManagedHash()
 
       val parser = new BibTeXParser(Source.fromFile(managedFile), console ! Error(_))
-      for (entry <- parser.entries) {
-        addEntry(entry)
-      }
+      addEntries(parser.entries)
     }
   }
 
@@ -45,6 +43,18 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
 
     case Search(terms) =>
       sender ! search(terms)
+
+    case Command2("delete", ind) =>
+      syncMessage[SearchResults](modules("results"), GetResults(ind)) match {
+        case Some(SearchResults(rs)) =>
+          val newResults = rs.map(doDelete)
+
+          syncCommand(modules("results"), ReplaceResults(ind, newResults))
+        case None =>
+          console ! Error("Invalid search result")
+      }
+      sender ! CommandSuccess
+
 
     case Command2("import", ind) =>
       syncMessage[SearchResults](modules("results"), GetResults(ind)) match {
@@ -64,6 +74,82 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       super[Module].receive(msg)
   }
 
+  private def integrityCheck(): String = {
+    var action = "proceed"
+
+    if (managedHash != computeManagedHash()) {
+      console ! Warning("Managed file has been modified in the meantime!")
+      var ask = true
+      while(ask) {
+        syncMessage[LineRead](console, ReadLineWithHandle("(p)roceed (c)ancel (r)eload> ")) match {
+          case Some(LineRead("c")) =>
+            ask = false
+            action = "cancel"
+          case Some(LineRead("p")) =>
+            ask = false
+            action = "proceed"
+          case Some(LineRead("r")) =>
+            ask = false
+            action = "reload"
+          case Some(LineRead(_)) =>
+            console ! Error("wat?")
+            ask = true
+          case _ =>
+            action = "cancel"
+            ask = false
+        }
+      }
+    }
+
+    action
+  }
+
+  private def writeManagedFile() {
+    import org.apache.lucene.index.IndexReader
+    val reader = IndexReader.open(index)
+
+    val entries = for (i <- 0 until reader.maxDoc if !reader.isDeleted(i); entry <- documentToEntry(reader.document(i))) yield  entry
+
+    val fw = new FileWriter(managedFile, false)
+
+    for (entry <- entries.sortBy(_.getKey)) {
+      fw.write(entry.toString)
+      fw.write("\n\n")
+    }
+
+    fw.close
+
+    managedHash = computeManagedHash()
+  }
+
+  private def doDelete(res: SearchResult): SearchResult = {
+    var newRes = res
+
+    if (res.sources.contains("managed")) {
+      val action = integrityCheck()
+
+      if (action == "proceed") {
+        deleteEntryByKey(res.entry.getKey)
+
+        writeManagedFile()
+
+        newRes = newRes.copy(sources = newRes.sources - "managed")
+
+        console ! Success("Entry no longer managed!")
+
+      } else if(action == "cancel") {
+        console ! Success("Aborted")
+      } else if (action == "reload") {
+        loadFile()
+        console ! Success("File reloaded!")
+      }
+    } else {
+      console ! Success("Entry is not in managed, cannot be deleted!")
+    }
+
+    newRes
+  }
+
   private def doImport(res: SearchResult): SearchResult = {
     var newRes = res
 
@@ -81,55 +167,17 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
     }
 
     if (!res.sources.contains("managed") || res.sources.contains("modified")) {
-      var action = "import"
+      val action = integrityCheck()
 
-      if (managedHash != computeManagedHash()) {
-        console ! Warning("Managed file has been modified in the meantime!")
-        var ask = true
-        while(ask) {
-          syncMessage[LineRead](console, ReadLineWithHandle("(i)mport (c)ancel (r)eload> ")) match {
-            case Some(LineRead("c")) =>
-              ask = false
-              action = "cancel"
-            case Some(LineRead("i")) =>
-              ask = false
-              action = "import"
-            case Some(LineRead("r")) =>
-              ask = false
-              action = "reload"
-            case Some(LineRead(_)) =>
-              console ! Error("wat?")
-              ask = true
-            case _ =>
-              action = "cancel"
-              ask = false
-          }
-        }
-      }
-
-      if (action == "import") {
+      if (action == "proceed") {
         addEntry(res.entry)
 
-        import org.apache.lucene.index.IndexReader
-        val reader = IndexReader.open(index)
-
-        val entries = for (i <- 0 until reader.maxDoc if !reader.isDeleted(i); entry <- documentToEntry(reader.document(i))) yield  entry
-
-        val fw = new FileWriter(managedFile, false)
-
-        for (entry <- entries.sortBy(_.getKey)) {
-          fw.write(entry.toString)
-          fw.write("\n\n")
-        }
-
-        fw.close
-
-        managedHash = computeManagedHash()
+        writeManagedFile()
 
         newRes = newRes.copy(sources = newRes.sources + "managed")
 
         // Inform search module that we imported this
-        modules("search") ! ImportedResult(res)
+        modules("search") ! ImportedResult(newRes)
 
         displayImported()
       } else if(action == "cancel") {

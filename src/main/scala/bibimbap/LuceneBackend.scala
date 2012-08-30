@@ -21,6 +21,7 @@ trait LuceneBackend {
   val source: String
 
   private val analyzer = new StandardAnalyzer(Version.LUCENE_36)
+  private val config   = new IndexWriterConfig(Version.LUCENE_36, analyzer)
 
   def getLuceneIndex : Directory
 
@@ -35,35 +36,49 @@ trait LuceneBackend {
     index = idx
   }
 
+  def getEntryByKey(key: String): Option[BibTeXEntry] = None
+
+  def deleteEntryByKey(key: String) {
+    val writer = new IndexWriter(index, config)
+    writer.deleteDocuments(new Term("__key", key))
+    writer.close()
+  }
+
   def searchLucene(query: String): List[SearchResult] =
     searchEntries(query).flatMap{ case (doc, score) => documentToSearchResult(doc, score) }.toList
 
-  def addEntry(entry : BibTeXEntry) : Unit = {
-    val doc = new Document()
-
-    for((k,v) <- entry.entryMap) {
-      doc.add(new Field(k, v.toJava, Field.Store.YES, Field.Index.NO))
-    }
-
-    doc.add(new Field("__key",  entry.key.getOrElse(""), Field.Store.YES, Field.Index.NO))
-    doc.add(new Field("__type", entry.tpe.toString, Field.Store.YES, Field.Index.NO))
-
-    val sb = new StringBuilder()
-    entry.title.foreach(sb.append(_))
-    sb.append(" ")
-    entry.authors.foreach { author =>
-      sb.append(author.toJava)
-      sb.append(" ")
-    }
-    entry.journal.foreach(j => sb.append(j.toJava))
-    entry.booktitle.foreach(b => sb.append(b.toJava))
-    entry.year.foreach(sb.append(_))
-
-    doc.add(new Field("__blob", sb.toString, Field.Store.NO, Field.Index.ANALYZED))
-
-    val config = new IndexWriterConfig(Version.LUCENE_36, analyzer)
+  def addEntry(entry: BibTeXEntry): Unit =
+    addEntries(List(entry))
+    
+  def addEntries(entries : Iterable[BibTeXEntry]) : Unit = {
     val writer = new IndexWriter(index, config)
-    writer.addDocument(doc)
+
+    for (entry <- entries) {
+      val doc = new Document()
+
+      for((k,v) <- entry.entryMap) {
+        doc.add(new Field(k, v.toJava, Field.Store.YES, Field.Index.NO))
+      }
+
+      doc.add(new Field("__key",  entry.key.getOrElse(""), Field.Store.YES, Field.Index.ANALYZED))
+      doc.add(new Field("__type", entry.tpe.toString, Field.Store.YES, Field.Index.NO))
+
+      val sb = new StringBuilder()
+      entry.title.foreach(sb.append(_))
+      sb.append(" ")
+      entry.authors.foreach { author =>
+        sb.append(author.toJava)
+        sb.append(" ")
+      }
+      entry.journal.foreach(j => sb.append(j.toJava))
+      entry.booktitle.foreach(b => sb.append(b.toJava))
+      entry.year.foreach(sb.append(_))
+
+      doc.add(new Field("__blob", sb.toString, Field.Store.NO, Field.Index.ANALYZED))
+
+      writer.addDocument(doc)
+    }
+
     writer.close()
   }
 

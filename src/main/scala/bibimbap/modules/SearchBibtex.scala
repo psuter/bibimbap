@@ -19,9 +19,7 @@ class SearchBibtex(val repl: ActorRef, val console: ActorRef, val settings: Sett
     case Command2("load", path) =>
       val parser = new BibTeXParser(Source.fromFile(path), console ! Error(_))
 
-      for (entry <- parser.entries) {
-        addEntry(entry)
-      }
+      addEntries(parser.entries)
 
       sender ! CommandSuccess
 
