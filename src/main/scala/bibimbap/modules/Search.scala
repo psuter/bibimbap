@@ -50,7 +50,7 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, 
   }
 
   private def combineResults(resultss: List[SearchResults]): List[SearchResult]= {
-    val groupedByEntry = resultss.flatMap(_.entries).groupBy(_.entry.getKey).values
+    val groupedByEntry = resultss.flatMap(_.entries).groupBy(_.entry.magicIdentifier).values
 
     val combined = for (res <- groupedByEntry) yield {
       SearchResult(res.head.entry,

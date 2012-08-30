@@ -282,6 +282,16 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 
     buffer.dropRight(2).append("\n}").toString
   }
+
+  lazy val magicIdentifier = new BibTeXEntryID(this)
+}
+
+case class BibTeXEntryID(entry: BibTeXEntry) {
+  override def hashCode = 42
+  override def equals(o: Any) = o match {
+    case BibTeXEntryID(other) => (entry eq other) || (entry like other)
+    case _ => false
+  }
 }
 
 object BibTeXEntry {

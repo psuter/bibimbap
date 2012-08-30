@@ -10,7 +10,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
   private var results = List[SearchResult]()
 
   override def receive: Receive = {
-    case Command1("list") | Command1("show") =>
+    case Command1("list") | Command1("show") | Command1("last") =>
       displayResults()
       sender ! CommandSuccess
     case Command2("show", ind) =>
@@ -71,6 +71,8 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
         } else {
           None
         }
+      case _ =>
+        None
     }
   }
 
@@ -117,6 +119,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
   val helpItems = Map(
     "list"   -> HelpEntry("list",             "Displays the current list of results."),
+    "last"   -> HelpEntry("last",             "Displays the current list of results."),
     "show"   -> HelpEntry("show <result>",    "Displays the bib entry for the <results>th search result.")
   )
 }
