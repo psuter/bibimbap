@@ -116,6 +116,30 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 
   val allFields = fields.keySet ++ seqFields.keySet
 
+  // Checks whether a bibtexentry may be the same with another
+  def like(that: BibTeXEntry): Boolean = {
+    def compField(a: Option[MString], b: Option[MString]) = (a,b) match {
+      case (Some(aa), Some(bb)) =>
+        aa.toJava == bb.toJava
+      case _ =>
+        false
+    }
+
+    if (this.getKey == that.getKey) {
+      true
+    } else if (this.generateKey == that.generateKey) {
+      true
+    } else if (compField(this.doi, that.doi)) {
+      true
+    } else if (compField(this.title, that.title)) {
+      // Let's make sure by checking another criteria
+      compField(this.year, that.year) ||
+      compField(this.journal, that.journal) ||
+      compField(this.booktitle, that.booktitle)
+    } else {
+      false
+    }
+  }
 
   def isValid: Boolean = {
     val missingReqFields = requiredFields.filter(!_.satisfiedBy(allFields))
@@ -123,7 +147,9 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
     missingReqFields.isEmpty
   }
 
-  def getKey: String = key.getOrElse {
+  def getKey: String = key.getOrElse(generateKey)
+
+  def generateKey: String = {
     val commonWords = Set("", "in", "the", "a", "an", "of", "for", "and", "or", "by", "on", "with")
 
     def isBibTeXFriendly(c : Char) : Boolean = (
