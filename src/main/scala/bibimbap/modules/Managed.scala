@@ -5,6 +5,7 @@ import akka.actor._
 import bibtex._
 import strings._
 import bibtex._
+import util.FileUtils
 
 import scala.io.Source
 import java.io.{File, FileWriter}
@@ -19,13 +20,15 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
   val source = "managed"
 
   val managedPath = settings("general", "bib.filename")
-  var lastModified = 0l
   val managedFile = new File(managedPath)
+  var managedHash: Option[String] = None
+
+  def computeManagedHash(): Option[String] = FileUtils.md5(managedFile)
 
   def loadFile() {
     if(managedFile.exists && managedFile.isFile && managedFile.canRead) {
 
-      lastModified = managedFile.lastModified()
+      managedHash  = computeManagedHash()
 
       val parser = new BibTeXParser(Source.fromFile(managedFile), console ! Error(_))
       for (entry <- parser.entries) {
@@ -46,9 +49,9 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
     case Command2("import", ind) =>
       syncMessage[SearchResults](modules("results"), GetResults(ind)) match {
         case Some(SearchResults(rs)) =>
-          for (r <- rs) {
-            doImport(r)
-          }
+          val newResults = rs.map(doImport)
+
+          syncCommand(modules("results"), ReplaceResults(ind, newResults))
         case None =>
           console ! Error("Invalid search result")
       }
@@ -61,7 +64,8 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       super[Module].receive(msg)
   }
 
-  private def doImport(res: SearchResult) {
+  private def doImport(res: SearchResult): SearchResult = {
+    var newRes = res
 
     def displayImported() {
       try {
@@ -79,7 +83,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
     if (!res.sources.contains("managed") || res.sources.contains("modified")) {
       var action = "import"
 
-      if (lastModified < managedFile.lastModified) {
+      if (managedHash != computeManagedHash()) {
         console ! Warning("Managed file has been modified in the meantime!")
         var ask = true
         while(ask) {
@@ -120,6 +124,8 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
 
         fw.close
 
+        newRes = newRes.copy(sources = newRes.sources + "managed")
+
         // Inform search module that we imported this
         modules("search") ! ImportedResult(res)
 
@@ -134,6 +140,8 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       console ! Success("Entry already imported as is!")
       displayImported()
     }
+
+    newRes
   }
 
   val helpItems = Map(
