@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 
 case object Start
 case object ReadLine
-case class  ReadLineWithHandle(handle: String)
+case class  ReadLineWithHandle(handle: String, line: Option[String] = None)
 case class LineRead(str: String)
 object EOF extends LineRead(null)
 

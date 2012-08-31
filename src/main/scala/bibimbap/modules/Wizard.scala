@@ -84,7 +84,9 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
           display()
 
         case Some(LineRead(field)) =>
-          val newValue = syncMessage[LineRead](console, ReadLineWithHandle("edit value> ")) match {
+          val fieldContent = map.get(field).map(_.toJava)
+
+          val newValue = syncMessage[LineRead](console, ReadLineWithHandle("edit value> ", fieldContent)) match {
             case Some(LineRead("")) =>
               None
 

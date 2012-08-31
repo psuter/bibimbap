@@ -25,7 +25,7 @@ class Console(settings: Settings, historyFileName: String) extends Actor {
       out("")
       sender ! LineRead(reader.readLine(defaultHandle))
       out("")
-    case ReadLineWithHandle(handle) =>
+    case ReadLineWithHandle(handle, oline) =>
       out("")
       sender ! LineRead(reader.readLine(handle))
       out("")

@@ -50,14 +50,25 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, 
   }
 
   private def combineResults(resultss: List[SearchResults]): List[SearchResult]= {
-    val groupedByEntry = resultss.flatMap(_.entries).groupBy(_.entry.magicIdentifier).values
+    import scala.collection.mutable.ListBuffer
 
-    val combined = for (res <- groupedByEntry) yield {
+    var equivClasses = ListBuffer[ListBuffer[SearchResult]]()
+
+    for (res <- resultss.flatMap(_.entries)) {
+      equivClasses.find(_.head.entry like res.entry) match {
+        case Some(cl) => cl.append(res)
+        case None     => equivClasses.append(new ListBuffer[SearchResult]() :+ res)
+      }
+    }
+
+    val combined = for (res <- equivClasses) yield {
       SearchResult(res.head.entry,
                    res.flatMap(_.sources).toSet,
                    res.map(_.relevance).max,
-                   res.exists(_.isEdited),
-                   res.exists(_.isManaged))
+                   isEdited     = res.exists(_.isEdited),
+                   isManaged    = res.exists(_.isManaged),
+                   alternatives = res.tail.map(_.entry).toSet.filter(_ != res.head.entry)
+                 )
     }
 
     val sorted = combined.toList.sortBy(- _.relevance)
