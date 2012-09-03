@@ -33,7 +33,7 @@ class SearchBibtex(val repl: ActorRef, val console: ActorRef, val settings: Sett
       super[Module].receive(msg)
   }
 
-  lazy val fileNamesCompletor = new jline.FileNameCompletor()
+  private lazy val fileNamesCompletor = new jline.FileNameCompletor()
 
   override def complete(buffer: String, pos: Int): (List[String], Int) = {
     import collection.JavaConversions._

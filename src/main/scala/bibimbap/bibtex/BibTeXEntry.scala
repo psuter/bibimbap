@@ -256,31 +256,14 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
       }
     }
 
-    printSeqField("author",         authors)
-    printSeqField("editor",         editors)
-    printOptField("title",          title)
-    printOptField("booktitle",      booktitle)
-    printOptField("journal",        journal)
-    printOptField("pages",          pages)
-    printOptField("chapter",        chapter)
-    printOptField("volume",         volume)
-    printOptField("number",         number)
-    printOptField("series",         series)
-    printOptField("month",          month)
-    printOptField("year",           year)
-    printOptField("address",        address)
-    printOptField("edition",        edition)
-    printOptField("institution",    institution)
-    printOptField("howpublished",   howpublished)
-    printOptField("key",            keyField)
-    printOptField("organization",   organization)
-    printOptField("publisher",      publisher)
-    printOptField("school",         school)
-    printOptField("type",           trType)
-    printOptField("url",            url)
-    printOptField("eprint",         eprint)
-    printOptField("annote",         annote)
-    printOptField("note",           note)
+      
+    for (field <- allFields.toSeq.sorted) {
+      if (seqFields contains field) {
+        printSeqField(field, seqFields(field))
+      } else {
+        printOptField(field, fields.get(field))
+      }
+    }
 
     buffer.dropRight(2).append("\n}").toString
   }

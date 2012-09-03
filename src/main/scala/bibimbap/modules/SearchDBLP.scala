@@ -103,8 +103,8 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
           case _ => unknown
         }
 
-        val link : Option[String] = (obj \ "dblp:title" \ "@ee") match {
-          case JString(str) => Some(str)
+        val link : Option[MString] = (obj \ "dblp:title" \ "@ee") match {
+          case JString(str) => Some(MString.fromJava(str))
           case _ => None
         }
 
@@ -122,17 +122,19 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
               case JString(os) => console ! Warning("Could not extract venue information from string [" + os + "]."); (None, None, None)
               case _ => (None, None, None)
             }
+            val omap = Map[String, Option[MString]](
+                "title"     -> Some(title),
+                "authors"   -> Some(authors),
+                "booktitle" -> venue.map(MString.fromJava),
+                "year"      -> yr2yr(venueYear).orElse(year),
+                "pages"     -> pages.map(MString.fromJava),
+                "link"      -> link
+            )
 
-            val entry = BibTeXEntry.fromEntryMap(BibTeXEntryTypes.InProceedings, optKey,
-              Map[String, MString](
-                "title"     -> title,
-                "authors"   -> authors,
-                "booktitle" -> venue.map(MString.fromJava).getOrElse(unknown),
-                "year"      -> yr2yr(venueYear).getOrElse(year.getOrElse(unknown)),
-                "pages"     -> pages.map(MString.fromJava).getOrElse(unknown)
-              ), console ! Error(_))
+            val map = omap.filterNot(_._2.isEmpty).mapValues(_.get)
 
-            // ADD Link
+            val entry = BibTeXEntry.fromEntryMap(BibTeXEntryTypes.InProceedings, optKey, map, console ! Error(_))
+
             entry.map(SearchResult(_, Set(source), score))
           }
 
@@ -150,24 +152,19 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
             if(isCoRR) {
               None
             } else {
-              var map = Map[String, MString](
-                "authors"   -> authors,
-                "title"     -> title,
-                "journal"   -> jour.map(MString.fromJava).getOrElse(unknown),
-                "year"      -> yr2yr(yr).getOrElse(year.getOrElse(unknown))
+              val omap = Map[String, Option[MString]](
+                "authors"   -> Some(authors),
+                "title"     -> Some(title),
+                "journal"   -> jour.map(MString.fromJava),
+                "year"      -> yr2yr(yr).orElse(year),
+                "volume"    -> vol.map(MString.fromJava),
+                "number"    -> num.map(MString.fromJava),
+                "pages"     -> pgs.map(MString.fromJava),
+                "link"      -> link
               )
 
-              if (!vol.isEmpty) {
-                map += "volume" -> MString.fromJava(vol.get)
-              }
-              if (!num.isEmpty) {
-                map += "number" -> MString.fromJava(num.get)
-              }
-              if (!pgs.isEmpty) {
-                map += "pages" -> MString.fromJava(pgs.get)
-              }
+              val map = omap.filterNot(_._2.isEmpty).mapValues(_.get)
 
-              //TODO: Add Link
               BibTeXEntry.fromEntryMap(BibTeXEntryTypes.Article, optKey, map, console ! Error(_)).map(SearchResult(_, Set(source), score))
             }
           }
