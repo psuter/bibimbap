@@ -108,6 +108,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
   val year         : Option[MString] = fields.get("year")
   val link         : Option[MString] = fields.get("link")
   val doi          : Option[MString] = fields.get("doi")
+  val dblp         : Option[MString] = fields.get("dblp")
   val keyField     : Option[MString] = fields.get("key")
 
   lazy val entryMap = {
@@ -127,11 +128,13 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 
     if (this == that) {
       true
+    } else if (compField(this.doi, that.doi)) {
+      true
+    } else if (compField(this.dblp, that.dblp)) {
+      true
     } else if (this.getKey == that.getKey) {
       true
     } else if (this.generateKey == that.generateKey) {
-      true
-    } else if (compField(this.doi, that.doi)) {
       true
     } else if (compField(this.title, that.title)) {
       // Let's make sure by checking another criteria
