@@ -15,6 +15,7 @@ class General(val repl: ActorRef, val console: ActorRef, val settings: Settings)
   }
 
   val helpItems = Map(
+    "help" -> HelpEntry("help [<command>]", "This help"),
     "exit" -> HelpEntry("exit", "Exits bibimbap"),
     "quit" -> HelpEntry("quit", "Exits bibimbap")
   )

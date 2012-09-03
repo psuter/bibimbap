@@ -39,8 +39,30 @@ trait Module extends Actor with ActorHelpers {
       shutdown(os)
       sender ! CommandSuccess
 
+    case Complete(buffer, pos) =>
+      val (res, index) = completeWithHelp(buffer, pos)
+      sender ! Completed(res, index)
+
     case _ =>
       sender ! CommandUnknown
+  }
+
+  def complete(buffer: String, pos: Int): (List[String], Int) = {
+    (Nil, 0)
+  }
+
+  def completeWithHelp(buffer: String, pos: Int): (List[String], Int) = {
+    val toComplete = buffer.substring(0, pos)
+
+    val results = for (command <- helpItems.keySet.toList if command.startsWith(toComplete)) yield {
+      command+" "
+    }
+
+    if (results.isEmpty) {
+      complete(buffer, pos)
+    } else {
+      (results, 0)
+    }
   }
 
   def startup(os: OnStartup) {

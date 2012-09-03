@@ -16,7 +16,7 @@ trait ActorHelpers extends Actor {
 
   val console: ActorRef
 
-  def dispatchCommand[T: ClassTag](cmd: Any, to: List[ActorRef])(implicit timeout: Timeout): List[T] = {
+  def dispatchMessage[T: ClassTag](cmd: Any, to: List[ActorRef])(implicit timeout: Timeout): List[T] = {
     val futures = to.map(actor => (actor ? cmd).mapTo[T].map(Some(_)).recover {
       case e: java.util.concurrent.TimeoutException =>
         console ! Error("Timeout while waiting on partial results")
@@ -36,10 +36,10 @@ trait ActorHelpers extends Actor {
   }
 
   def syncCommand(actor: ActorRef, cmd: Any)(implicit timeout: Timeout): Option[CommandResult] = {
-    dispatchCommand[CommandResult](cmd, List(actor)).headOption
+    dispatchMessage[CommandResult](cmd, List(actor)).headOption
   }
 
   def syncMessage[T: ClassTag](actor: ActorRef, cmd: Any)(implicit timeout: Timeout): Option[T] = {
-    dispatchCommand[T](cmd, List(actor)).headOption
+    dispatchMessage[T](cmd, List(actor)).headOption
   }
 }

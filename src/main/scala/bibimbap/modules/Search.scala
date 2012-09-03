@@ -40,7 +40,7 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, 
 
   private def doSearch(args: List[String]): List[SearchResult] = {
     try {
-      val resultsPerSearch = dispatchCommand[SearchResults](Search(args), searchProviders)
+      val resultsPerSearch = dispatchMessage[SearchResults](Search(args), searchProviders)
       combineResults(resultsPerSearch)
     } catch {
       case e: TimeoutException =>

@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext
 class Repl(homeDir: String, configFileName: String, historyFileName: String) extends Actor with ActorHelpers {
   val settings = (new ConfigFileParser(configFileName)).parse.getOrElse(DefaultSettings)
 
-  val console = context.actorOf(Props(new Console(settings, historyFileName)), name = "Console")
+  val console = context.actorOf(Props(new Console(self, settings, historyFileName)), name = "Console")
 
   var modules = Map[String, ActorRef]()
 
@@ -50,7 +50,7 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
   def dispatchCommand(cmd: Command) {
     implicit val timeout = Timeout(365.day)
 
-    val results = dispatchCommand[CommandResult](cmd, modules.values.toList) 
+    val results = dispatchMessage[CommandResult](cmd, modules.values.toList) 
 
     val isKnown = results exists {
       case CommandSuccess  =>
@@ -78,6 +78,7 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
   def receive = {
     case Start =>
       dispatchCommand(OnStartup(modules = modules))
+      syncCommand(console, OnStartup(modules = modules))
       self ! ReadLine
 
     case ReadLine =>

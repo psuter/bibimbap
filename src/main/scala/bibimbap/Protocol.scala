@@ -32,6 +32,9 @@ case class CommandException(e: Throwable) extends CommandResult
 case object CommandSuccess extends CommandResult
 case object CommandUnknown extends CommandResult
 
+case class Complete(buffer: String, pos: Int) extends Command
+case class Completed(candidates: List[String], index: Int) extends Command
+
 // Protocol to/from search module
 //  => Search(terms)
 //  <= SearchResults(...)

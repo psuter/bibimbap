@@ -33,6 +33,23 @@ class SearchBibtex(val repl: ActorRef, val console: ActorRef, val settings: Sett
       super[Module].receive(msg)
   }
 
+  lazy val fileNamesCompletor = new jline.FileNameCompletor()
+
+  override def complete(buffer: String, pos: Int): (List[String], Int) = {
+    import collection.JavaConversions._
+    if (buffer.startsWith("load ") && pos >= "load ".length) {
+      val newbuffer = buffer.substring("load ".length, buffer.length) 
+      val newpos    = pos - " load ".length
+
+      val list  = new java.util.ArrayList[String]()
+      val index = fileNamesCompletor.complete(newbuffer, newpos, list)
+
+      (list.toList, index + "load ".length)
+    } else {
+      (Nil, 0)
+    }
+  }
+
   val helpItems = Map(
     "load" -> HelpEntry("load <path>",  "loads <path> bibtex file into searchable cache")
   )
