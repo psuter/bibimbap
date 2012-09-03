@@ -30,9 +30,9 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
     val searchBibtex = context.actorOf(Props(new SearchBibtex(self, console, settings)), name = "searchBibtex");
 
     val searchProviders = List(
-      context.actorOf(Props(new SearchLocal(self, console, settings)), name = "searchLocal"),
-      context.actorOf(Props(new SearchDBLP(self, console, settings)), name = "searchRemote"),
       managed,
+      context.actorOf(Props(new SearchLocal(self, console, settings)), name = "searchLocal"),
+      context.actorOf(Props(new SearchDBLP(self, console, settings)), name = "searchDBLP"),
       searchBibtex
     )
 
