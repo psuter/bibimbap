@@ -88,6 +88,11 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
       case _ => 0d
     }
 
+    val dblpID = (record \ "@id") match {
+      case JInt(x) => Some(MString.fromJava(x+""))
+      case _ => None
+    }
+
     val optKey = None;
 
     (record \ "title") match {
@@ -103,9 +108,19 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
           case _ => unknown
         }
 
-        val link : Option[MString] = (obj \ "dblp:title" \ "@ee") match {
-          case JString(str) => Some(MString.fromJava(str))
-          case _ => None
+        val (link, doi) = (obj \ "dblp:title" \ "@ee") match {
+          case JString(str) => 
+            val doi = if (str.startsWith("http://doi.acm.org/")) {
+              Some(str.substring("http://doi.acm.org/".length, str.length))
+            } else if (str.startsWith("http://dx.doi.org/")) {
+              Some(str.substring("http://dx.doi.org/".length, str.length))
+            } else {
+              None
+            }
+
+            (Some(MString.fromJava(str)), doi.map(MString.fromJava))
+          case _ =>
+            (None, None)
         }
 
         val year : Option[MString] = (obj \ "dblp:year") match {
@@ -128,7 +143,9 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
                 "booktitle" -> venue.map(MString.fromJava),
                 "year"      -> yr2yr(venueYear).orElse(year),
                 "pages"     -> pages.map(MString.fromJava),
-                "link"      -> link
+                "link"      -> link,
+                "doi"       -> doi,
+                "dblp"      -> dblpID
             )
 
             val map = omap.filterNot(_._2.isEmpty).mapValues(_.get)
@@ -160,7 +177,9 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
                 "volume"    -> vol.map(MString.fromJava),
                 "number"    -> num.map(MString.fromJava),
                 "pages"     -> pgs.map(MString.fromJava),
-                "link"      -> link
+                "link"      -> link,
+                "doi"       -> doi,
+                "dblp"      -> dblpID
               )
 
               val map = omap.filterNot(_._2.isEmpty).mapValues(_.get)
