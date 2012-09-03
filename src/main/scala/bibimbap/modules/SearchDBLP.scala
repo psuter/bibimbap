@@ -139,7 +139,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
             }
             val omap = Map[String, Option[MString]](
                 "title"     -> Some(title),
-                "authors"   -> Some(authors),
+                "author"    -> Some(authors),
                 "booktitle" -> venue.map(MString.fromJava),
                 "year"      -> yr2yr(venueYear).orElse(year),
                 "pages"     -> pages.map(MString.fromJava),
@@ -170,7 +170,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
               None
             } else {
               val omap = Map[String, Option[MString]](
-                "authors"   -> Some(authors),
+                "author"    -> Some(authors),
                 "title"     -> Some(title),
                 "journal"   -> jour.map(MString.fromJava),
                 "year"      -> yr2yr(yr).orElse(year),
