@@ -81,70 +81,48 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
   }
 
   private def displayResults() {
-    var displayLegend = Map(
-      "alternatives" -> false,
-      "managed"      -> false,
-      "managedMod"   -> false,
-      "managedInv"   -> false,
-      "incomplete"   -> false
+    case class ResultFlag(has: SearchResult => Boolean, symbol: String, legend: String)
+
+    val flagsColumns = List(
+      List(
+        ResultFlag({res => res.isManaged && res.entry.isValid && !res.isEdited }, Console.GREEN+"\u2714"+Console.RESET,   "Managed"),
+        ResultFlag({res => res.isManaged && res.entry.isValid && res.isEdited },  Console.YELLOW+"\u2714"+Console.RESET,  "Managed (edited)"),
+        ResultFlag({res => res.isManaged && !res.entry.isValid },                 Console.RED+"\u2714"+Console.RESET,     "Managed (incomplete)"),
+        ResultFlag({res => !res.entry.isValid },                                  Console.RED+"\u2049"+Console.RESET,     "Incomplete")
+      ),
+      List(ResultFlag(!_.alternatives.isEmpty, Console.BLUE+Console.BOLD+"+"+Console.RESET, "Multiple Alternatives"))
     )
 
-    var i = 0
-    for (res <- results) {
-      val spc = if ((i < 10) && (results.size > 10)) " " else ""
+    var columnsUsed = Set[Int]()
+    var flagsUsed   = Set[ResultFlag]()
 
-      val sources = if (res.alternatives.isEmpty) {
-        " "
-      } else {
-        displayLegend += "alternatives" -> true
-        "\u2026"
-      }
-
-      val symbol = if (res.isManaged) {
-        if (!res.entry.isValid) {
-          displayLegend += "managedInv" -> true
-        } else if(res.isEdited) {
-          displayLegend += "managedMod" -> true
-        } else {
-          displayLegend += "managed"    -> true
-        }
-
-        "\u2714"
-      } else if (res.entry.isValid) {
-        " "
-      } else {
-        displayLegend += "incomplete"   -> true
-        "\u2049"
-      }
-
-      val color = if (res.entry.isValid) {
-        if (res.isEdited) {
-          Console.YELLOW
-        } else {
-          Console.GREEN
-        }
-      } else {
-        Console.RED
-      }
-
-      val status = if (settings.colors) {
-        color+Console.BOLD+symbol+Console.RESET
-      } else {
-        symbol
-      }
-
-      console ! Out(" "+sources+status+" "+spc+"["+i+"] "+res.entry.inlineString)
-      i += 1
+    // Pre-checks what columns will be displayed
+    for (res <- results; (flags, column) <- flagsColumns.zipWithIndex; flag <- flags if flag.has(res)) {
+      columnsUsed += column
+      flagsUsed += flag
     }
 
-    if (displayLegend.exists(_._2 == true)) {
+    for ((res, i) <- results.zipWithIndex) {
+      val spc = if ((i < 10) && (results.size > 10)) " " else ""
+
+      val columns = for (col <- columnsUsed.toSeq.sorted) yield {
+        flagsColumns(col).find(_.has(res)) match {
+          case Some(flag) =>
+            flag.symbol
+          case None =>
+            " "
+        }
+      }
+
+      console ! Out(" "+columns.mkString+" "+spc+"["+i+"] "+res.entry.inlineString)
+    }
+
+    if (!flagsUsed.isEmpty) {
       console ! Out("")
       console ! Out(" Legend:")
-      if (displayLegend("alternatives")) console ! Out("   "+Console.BOLD+"\u2026"+Console.RESET+" : Alternatives available")
-      if (displayLegend("managed"))      console ! Out("   "+Console.BOLD+Console.GREEN +"\u2714"+Console.RESET+" : Managed")
-      if (displayLegend("managedMod"))   console ! Out("   "+Console.BOLD+Console.YELLOW+"\u2714"+Console.RESET+" : Managed (edited)")
-      if (displayLegend("managedInv"))   console ! Out("   "+Console.BOLD+Console.YELLOW+"\u2714"+Console.RESET+" : Managed (incomplete)")
-      if (displayLegend("incomplete"))   console ! Out("   "+Console.BOLD+Console.RED +"\u2049"+Console.RESET  +" : Incomplete")
+      for (flag <- flagsUsed) {
+        console ! Out("   "+flag.symbol+" : "+flag.legend)
+      }
     }
     if (results.isEmpty) {
       console ! Info("No match")
