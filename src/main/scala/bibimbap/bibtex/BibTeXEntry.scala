@@ -270,6 +270,32 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 
     buffer.dropRight(2).append("\n}").toString
   }
+
+  def display(out: String => Unit, fieldFormatter: String => String, errorFormatter: String => String) {
+    out(" Entry type: "+tpe)
+    out(" Required fields:")
+    for (f <- requiredFields.flatMap(_.toFields)) {
+      if (entryMap contains f) {
+        out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap(f)))
+      } else {
+        out(("   "+errorFormatter("%12s")+" = %s").format(f, "<missing>"))
+      }
+    }
+    out("")
+    out(" Optional fields for "+tpe+":")
+    for (f <- optionalFields) {
+      out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap.getOrElse(f, "<missing>")))
+    }
+
+    val extraFields = entryMap.keySet -- BibTeXEntryTypes.allStdFields
+    if (!extraFields.isEmpty) {
+      out("")
+      out(" Extra fields:")
+      for (f <- extraFields) {
+        out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap(f)))
+      }
+    }
+  }
 }
 
 object BibTeXEntry {

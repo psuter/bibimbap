@@ -42,29 +42,7 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
     def inRedBold(str: String): String = if (settings.colors) Console.BOLD+Console.RED+str+Console.RESET else str
 
     def display() {
-      console ! Out(" Entry type: "+entry.tpe)
-      console ! Out(" Required fields:")
-      for (f <- entry.requiredFields.flatMap(_.toFields)) {
-        if (map contains f) {
-          console ! Out(("   "+inBold("%12s")+" = %s").format(f, map(f)))
-        } else {
-          console ! Out(("   "+inRedBold("%12s")+" = %s").format(f, "<missing>"))
-        }
-      }
-      console ! Out("")
-      console ! Out(" Optional fields for "+entry.tpe+":")
-      for (f <- entry.optionalFields) {
-        console ! Out(("   "+inBold("%12s")+" = %s").format(f, map.getOrElse(f, "<missing>")))
-      }
-
-      val extraFields = map.keySet -- allStdFields -- Set("type")
-      if (!extraFields.isEmpty) {
-        console ! Out("")
-        console ! Out(" Extra fields:")
-        for (f <- extraFields) {
-          console ! Out(("   "+inBold("%12s")+" = %s").format(f, map(f)))
-        }
-      }
+      entry.display(console ! Out(_), inBold, inRedBold)
     }
 
     display()

@@ -13,6 +13,16 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     case Command1("list") | Command1("show") | Command1("last") =>
       displayResults()
       sender ! CommandSuccess
+    case Command2("bib", ind) =>
+      getResults(ind) match {
+        case Some(rs) =>
+          for (r <- rs) {
+            doBib(r)
+          }
+        case None =>
+          console ! Error("Invalid search result")
+      }
+      sender ! CommandSuccess
     case Command2("show", ind) =>
       getResults(ind) match {
         case Some(rs) =>
@@ -77,6 +87,12 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
   }
 
   private def doShow(res: SearchResult) {
+    def inBold(str: String): String    = if (settings.colors) Console.BOLD+str+Console.RESET else str
+    def inRedBold(str: String): String = if (settings.colors) Console.BOLD+Console.RED+str+Console.RESET else str
+    res.entry.display(console ! Out(_), inBold, inRedBold)
+  }
+
+  private def doBib(res: SearchResult) {
     console ! Out(res.entry.toString)
   }
 
@@ -132,6 +148,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
   val helpItems = Map(
     "list"   -> HelpEntry("list",             "Displays the current list of results."),
     "last"   -> HelpEntry("last",             "Displays the current list of results."),
-    "show"   -> HelpEntry("show <result>",    "Displays the bib entry for the <results>th search result.")
+    "bib"    -> HelpEntry("bib  <result>",    "Displays the bib entry for the <results>th search result."),
+    "show"   -> HelpEntry("show <result>",    "Displays the entry for the <results>th search result.")
   )
 }
