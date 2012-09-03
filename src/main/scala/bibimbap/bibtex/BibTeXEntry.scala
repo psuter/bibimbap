@@ -112,7 +112,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
   val keyField     : Option[MString] = fields.get("key")
 
   lazy val entryMap = {
-    Map("type" -> MString.fromJava(tpe.toString)) ++ fields ++ seqFields.mapValues(seq => MString.fromJava(seq.map(_.toJava).mkString(" and ")))
+    fields ++ seqFields.mapValues(seq => MString.fromJava(seq.map(_.toJava).mkString(" and ")))
   }
 
   val allFields = fields.keySet ++ seqFields.keySet
