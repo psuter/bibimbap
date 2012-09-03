@@ -81,16 +81,40 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
   }
 
   private def displayResults() {
+    var displayLegend = Map(
+      "alternatives" -> false,
+      "managed"      -> false,
+      "managedMod"   -> false,
+      "managedInv"   -> false,
+      "incomplete"   -> false
+    )
+
     var i = 0
     for (res <- results) {
       val spc = if ((i < 10) && (results.size > 10)) " " else ""
 
+      val sources = if (res.alternatives.isEmpty) {
+        " "
+      } else {
+        displayLegend += "alternatives" -> true
+        "\u2026"
+      }
+
       val symbol = if (res.isManaged) {
-        "\u2713"
+        if (!res.entry.isValid) {
+          displayLegend += "managedInv" -> true
+        } else if(res.isEdited) {
+          displayLegend += "managedMod" -> true
+        } else {
+          displayLegend += "managed"    -> true
+        }
+
+        "\u2714"
       } else if (res.entry.isValid) {
         " "
       } else {
-        "?"
+        displayLegend += "incomplete"   -> true
+        "\u2049"
       }
 
       val color = if (res.entry.isValid) {
@@ -109,8 +133,18 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
         symbol
       }
 
-      console ! Info(status+" "+spc+"["+i+"] "+res.entry.inlineString)
+      console ! Out(" "+sources+status+" "+spc+"["+i+"] "+res.entry.inlineString)
       i += 1
+    }
+
+    if (displayLegend.exists(_._2 == true)) {
+      console ! Out("")
+      console ! Out(" Legend:")
+      if (displayLegend("alternatives")) console ! Out("   "+Console.BOLD+"\u2026"+Console.RESET+" : Alternatives available")
+      if (displayLegend("managed"))      console ! Out("   "+Console.BOLD+Console.GREEN +"\u2714"+Console.RESET+" : Managed")
+      if (displayLegend("managedMod"))   console ! Out("   "+Console.BOLD+Console.YELLOW+"\u2714"+Console.RESET+" : Managed (edited)")
+      if (displayLegend("managedInv"))   console ! Out("   "+Console.BOLD+Console.YELLOW+"\u2714"+Console.RESET+" : Managed (incomplete)")
+      if (displayLegend("incomplete"))   console ! Out("   "+Console.BOLD+Console.RED +"\u2049"+Console.RESET  +" : Incomplete")
     }
     if (results.isEmpty) {
       console ! Info("No match")
