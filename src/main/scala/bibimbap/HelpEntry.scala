@@ -12,7 +12,9 @@ case class HelpEntry(command: String, short: String, description: List[String] =
   }
 
   def displayShort(to: ActorRef) {
-    to ! Info("%-30s: %s".format(command, short))
+    to ! Info(toShort)
   }
+
+  def toShort: String = "%-30s: %s".format(command, short)
 
 }

@@ -163,6 +163,6 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
 
   val helpItems = Map(
     "edit"   -> HelpEntry("edit <result>",  "Edit the <results>th item from the last search result."),
-    "new"    -> HelpEntry("new  <kind>",    "Add a new entry of type <kind>.")
+    "new"    -> HelpEntry("new <kind>",    "Add a new entry of type <kind>.")
   )
 }
