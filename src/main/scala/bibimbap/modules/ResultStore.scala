@@ -13,6 +13,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     case Command1("list") | Command1("show") | Command1("last") =>
       displayResults()
       sender ! CommandSuccess
+
     case Command2("bib", ind) =>
       getResults(ind) match {
         case Some(rs) =>
@@ -23,6 +24,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
           console ! Error("Invalid search result")
       }
       sender ! CommandSuccess
+
     case Command2("show", ind) =>
       getResults(ind) match {
         case Some(rs) =>
@@ -101,12 +103,16 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
     val flagsColumns = List(
       List(
-        ResultFlag({res => res.isManaged && res.entry.isValid && !res.isEdited }, Console.GREEN+"\u2714"+Console.RESET,   "Managed"),
-        ResultFlag({res => res.isManaged && res.entry.isValid && res.isEdited },  Console.YELLOW+"\u2714"+Console.RESET,  "Managed (edited)"),
-        ResultFlag({res => res.isManaged && !res.entry.isValid },                 Console.RED+"\u2714"+Console.RESET,     "Managed (incomplete)"),
-        ResultFlag({res => !res.entry.isValid },                                  Console.RED+"\u2049"+Console.RESET,     "Incomplete")
+        ResultFlag({res => res.isManaged && res.entry.isValid  }, Console.GREEN+"\u2714"+Console.RESET,   "Managed"),
+        ResultFlag({res => res.isManaged && !res.entry.isValid }, Console.RED+"\u2714"+Console.RESET,     "Managed (incomplete)"),
+        ResultFlag({res => !res.entry.isValid },                  Console.RED+"\u2049"+Console.RESET,     "Incomplete")
       ),
-      List(ResultFlag(!_.alternatives.isEmpty, Console.BLUE+Console.BOLD+"+"+Console.RESET, "Multiple Alternatives"))
+      List(
+        ResultFlag(_.isEdited, Console.YELLOW+Console.BOLD+"e"+Console.RESET, "Edited")
+      ),
+      List(
+        ResultFlag(!_.alternatives.isEmpty, Console.BLUE+Console.BOLD+"+"+Console.RESET, "Multiple Alternatives")
+      )
     )
 
     var columnsUsed = Set[Int]()

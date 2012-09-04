@@ -21,21 +21,25 @@ trait LuceneBackend {
   val source: String
 
   private val analyzer = new StandardAnalyzer(Version.LUCENE_36)
-  private val config   = new IndexWriterConfig(Version.LUCENE_36, analyzer)
 
   def getLuceneIndex : Directory
 
   protected var index: Directory = null
-  private lazy val writer        = new IndexWriter(index, config)
+
+  def getNewWriter(): IndexWriter = {
+    val config   = new IndexWriterConfig(Version.LUCENE_36, analyzer)
+    new IndexWriter(index, config)
+  }
 
   def initializeIndex() = {
     index  = getLuceneIndex
-    writer.commit()
+    getNewWriter().close()
   }
 
   def deleteEntryByKey(key: String) {
+    val writer = getNewWriter()
     writer.deleteDocuments(new Term("__key", key))
-    writer.commit()
+    writer.close()
   }
 
   def searchLucene(query: String): List[SearchResult] =
@@ -45,6 +49,7 @@ trait LuceneBackend {
     addEntries(List(entry))
     
   def addEntries(entries : Iterable[BibTeXEntry]) : Unit = {
+    val writer = getNewWriter()
     for (entry <- entries) {
       val doc = new Document()
 
@@ -71,7 +76,7 @@ trait LuceneBackend {
       writer.addDocument(doc)
     }
 
-    writer.commit()
+    writer.close()
   }
 
   private def searchEntries(query : String) : Iterable[(Document, Double)] = {
