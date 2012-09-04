@@ -54,7 +54,7 @@ case class GetResults(index: String)
 
 // => ShowResults
 // <= CommandSuccess
-case object ShowResults extends Command
+case class ShowResults(terms: List[String] = Nil) extends Command
 
 // => ReplaceResults(index, results)
 // <= CommandSuccess

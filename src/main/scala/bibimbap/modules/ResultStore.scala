@@ -11,7 +11,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
   override def receive: Receive = {
     case Command1("list") | Command1("show") | Command1("last") =>
-      displayResults()
+      displayResults(Nil)
       sender ! CommandSuccess
 
     case Command2("bib", ind) =>
@@ -53,8 +53,8 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     case GetResults(index) =>
       sender ! SearchResults(getResults(index).getOrElse(Nil))
 
-    case ShowResults =>
-      displayResults()
+    case ShowResults(terms) =>
+      displayResults(terms)
       sender ! CommandSuccess
 
     case x =>
@@ -97,7 +97,15 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     console ! Out(res.entry.toString)
   }
 
-  private def displayResults() {
+  private def displayResults(terms: List[String]) {
+    def highlight(str: String): String = {
+      if (settings.colors && !terms.isEmpty) {
+        import java.util.regex.Pattern
+        str.replaceAll("(?i)"+terms.map(Pattern.quote).mkString("(", "|", ")"), Console.BOLD+Console.MAGENTA+"$0"+Console.RESET)
+      } else {
+        str
+      }
+    }
     case class ResultFlag(has: SearchResult => Boolean, symbol: String, legend: String)
 
     val flagsColumns = List(
@@ -135,7 +143,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
         }
       }
 
-      console ! Out(" "+columns.mkString+" "+spc+"["+i+"] "+res.entry.inlineString)
+      console ! Out(" "+columns.mkString+" "+spc+"["+i+"] "+highlight(res.entry.inlineString))
     }
 
     if (!flagsUsed.isEmpty) {

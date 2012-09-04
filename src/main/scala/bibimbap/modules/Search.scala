@@ -18,7 +18,7 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, 
       val results = doSearch(args)
 
       syncCommand(resultsModule, SearchResults(results))
-      syncCommand(resultsModule, ShowResults)
+      syncCommand(resultsModule, ShowResults(args))
 
       sender ! CommandSuccess
 
