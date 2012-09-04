@@ -299,7 +299,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
       out("")
       out(" Extra fields:")
       for (f <- extraFields) {
-        out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap(f)))
+        out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap(f).toJava))
       }
     }
   }
