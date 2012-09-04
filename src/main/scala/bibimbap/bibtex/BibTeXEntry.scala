@@ -30,39 +30,39 @@ object BibTeXEntryTypes extends Enumeration {
   implicit def strToOneOf(str: String) = OneOf(str)
 
   val requiredFieldsFor = Map[BibTeXEntryType, Set[OneOf]](
-    Article         -> Set("authors", "title", "journal", "year"),
-    Book            -> Set(OneOf("authors", "editors"), "title", "publisher", "year"),
+    Article         -> Set("author", "title", "journal", "year"),
+    Book            -> Set(OneOf("author", "editor"), "title", "publisher", "year"),
     Booklet         -> Set("title"),
-    InBook          -> Set(OneOf("authors", "editors"), "title", OneOf("chapter", "pages"), "publisher", "year"),
-    InCollection    -> Set("authors", "title", "booktitle", "year"),
-    InProceedings   -> Set("authors", "title", "booktitle", "year"),
+    InBook          -> Set(OneOf("author", "editor"), "title", OneOf("chapter", "pages"), "publisher", "year"),
+    InCollection    -> Set("author", "title", "booktitle", "year"),
+    InProceedings   -> Set("author", "title", "booktitle", "year"),
     Manual          -> Set("title"),
-    MastersThesis   -> Set("authors", "title", "school", "year"),
+    MastersThesis   -> Set("author", "title", "school", "year"),
     Misc            -> Set(),
-    PhDThesis       -> Set("authors", "title", "school", "year"),
+    PhDThesis       -> Set("author", "title", "school", "year"),
     Proceedings     -> Set("title", "year"),
-    TechReport      -> Set("authors", "title", "institution", "year"),
-    Unpublished     -> Set("authors", "title", "note")
+    TechReport      -> Set("author", "title", "institution", "year"),
+    Unpublished     -> Set("author", "title", "note")
   ).withDefaultValue(Set())
 
   val optionalFieldsFor = Map(
     Article         -> Set("volume", "number", "pages", "month", "note", "key"),
     Book            -> Set("volume", "series", "address", "edition", "month", "note", "key", "pages"),
-    Booklet         -> Set("authors", "howpublished", "address", "month", "year", "note", "key"),
+    Booklet         -> Set("author", "howpublished", "address", "month", "year", "note", "key"),
     InBook          -> Set("volume", "series", "address", "edition", "month", "note", "key"),
     InCollection    -> Set("editor", "pages", "organization", "publisher", "address", "month", "note", "key"),
     InProceedings   -> Set("editor", "pages", "organization", "publisher", "address", "month", "note", "key"),
-    Manual          -> Set("authors", "organization", "edition", "address", "year", "month", "note", "key"),
+    Manual          -> Set("author", "organization", "edition", "address", "year", "month", "note", "key"),
     MastersThesis   -> Set("address", "month", "note", "key"),
-    Misc            -> Set("authors", "howpublished", "title", "month", "year", "note", "key"),
+    Misc            -> Set("author", "howpublished", "title", "month", "year", "note", "key"),
     PhDThesis       -> Set("address", "month", "note", "key"),
     Proceedings     -> Set("editor", "organization", "publisher", "address", "month", "note", "key"),
     TechReport      -> Set("type", "number", "address", "month", "note", "key"),
     Unpublished     -> Set("month", "year", "key")
   ).withDefaultValue(Set())
 
-  val allStdFields = Set("address", "abstract", "annote", "authors",
-      "booktitle", "chapter", "crossref", "edition", "editors", "eprint",
+  val allStdFields = Set("address", "abstract", "annote", "author",
+      "booktitle", "chapter", "crossref", "edition", "editor", "eprint",
       "howpublished", "institution", "journal", "key", "month", "note", "number",
       "organization", "pages", "publisher", "school", "series", "title", "type",
       "url", "volume", "year")
@@ -84,11 +84,11 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
   // convenience fields
   val address      : Option[MString] = fields.get("address")
   val annote       : Option[MString] = fields.get("annote")
-  val authors      : Seq[MString]    = seqFields.getOrElse("authors", Seq.empty)
+  val authors      : Seq[MString]    = seqFields.getOrElse("author", Seq.empty)
   val booktitle    : Option[MString] = fields.get("booktitle")
   val chapter      : Option[MString] = fields.get("chapter")
   val edition      : Option[MString] = fields.get("edition")
-  val editors      : Seq[MString]    = seqFields.getOrElse("editors", Seq.empty)
+  val editors      : Seq[MString]    = seqFields.getOrElse("editor", Seq.empty)
   val eprint       : Option[MString] = fields.get("eprint")
   val howpublished : Option[MString] = fields.get("howpublished")
   val institution  : Option[MString] = fields.get("institution")
@@ -301,17 +301,16 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 object BibTeXEntry {
   def fromEntryMap(tpe: BibTeXEntryTypes.BibTeXEntryType, key: Option[String], map : Map[String,MString], onError: String => Unit) : Option[BibTeXEntry] = {
     try {
-      val isSeqField = Set("authors", "editors")
+      val isSeqField = Set("author", "editor")
 
       var fields    = Map[String, MString]()
       var seqFields = Map[String, Seq[MString]]()
 
       for ((field, value) <- map) {
-        val f = if (field == "author") "authors" else field
-        if (!isSeqField(f)) {
-          fields += f -> value
+        if (isSeqField(field)) {
+          seqFields += field -> value.toJava.split(" and ").map(MString.fromJava _).toSeq
         } else {
-          seqFields += f -> value.toJava.split(" and ").map(MString.fromJava _).toSeq
+          fields += field -> value
         }
       }
 
