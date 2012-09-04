@@ -244,6 +244,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 
   override def toString = toStringWithKey(getKey)
 
+  private val preferredDisplayingOrder : Seq[String] = List("title", "author", "editor", "booktitle", "journal", "year")
   def toStringWithKey(key : String) : String = {
     val buffer = new StringBuilder
     buffer.append("@" + tpe + "{" + key + ",\n")
@@ -266,14 +267,27 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
       }
     }
 
-      
-    for (field <- allFields.toSeq.sorted) {
-      if (seqFields contains field) {
+    def printField(field : String) {
+      if(seqFields contains field) {  
         printSeqField(field, seqFields(field))
       } else {
         printOptField(field, fields.get(field))
       }
+    } 
+
+    var remaining : Set[String] = allFields
+
+    def printSubset(subset : Traversable[String]) {
+      for(field <- subset if remaining(field)) {
+        printField(field)
+        remaining -= field
+      }
     }
+
+    printSubset(preferredDisplayingOrder)
+    printSubset(requiredFields.flatMap(_.toFields))
+    printSubset(optionalFields)
+    printSubset(allFields)
 
     buffer.dropRight(2).append("\n}").toString
   }
