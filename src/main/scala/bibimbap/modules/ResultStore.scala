@@ -97,30 +97,31 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     console ! Out(res.entry.toString)
   }
 
+  case class ResultFlag(has: SearchResult => Boolean, symbol: String, legend: String)
+
+  val flagsColumns = List(
+    List(
+      ResultFlag({res => res.isManaged && res.entry.isValid  }, if (settings.colors) Console.GREEN+"\u2714"+Console.RESET else "\u2714",   "Managed"),
+      ResultFlag({res => res.isManaged && !res.entry.isValid }, if (settings.colors) Console.RED+"\u2714"+Console.RESET else "\u2714",     "Managed (incomplete)"),
+      ResultFlag({res => !res.entry.isValid },                  if (settings.colors) Console.RED+"\u2049"+Console.RESET else "\u2049",     "Incomplete")
+    ),
+    List(
+      ResultFlag(_.isEdited, if (settings.colors) Console.YELLOW+Console.BOLD+"e"+Console.RESET else "e", "Edited")
+    ),
+    List(
+      ResultFlag(!_.alternatives.isEmpty, if (settings.colors) Console.BLUE+Console.BOLD+"+"+Console.RESET else "+", "Multiple Alternatives")
+    )
+  )
+
   private def displayResults(terms: List[String]) {
     def highlight(str: String): String = {
       if (settings.colors && !terms.isEmpty) {
         import java.util.regex.Pattern
-        str.replaceAll("(?i)"+terms.map(Pattern.quote).mkString("(", "|", ")"), Console.BOLD+Console.MAGENTA+"$0"+Console.RESET)
+        str.replaceAll("(?i)"+terms.map(Pattern.quote).mkString("(", "|", ")"), Console.BOLD+Console.RED+"$0"+Console.RESET)
       } else {
         str
       }
     }
-    case class ResultFlag(has: SearchResult => Boolean, symbol: String, legend: String)
-
-    val flagsColumns = List(
-      List(
-        ResultFlag({res => res.isManaged && res.entry.isValid  }, Console.GREEN+"\u2714"+Console.RESET,   "Managed"),
-        ResultFlag({res => res.isManaged && !res.entry.isValid }, Console.RED+"\u2714"+Console.RESET,     "Managed (incomplete)"),
-        ResultFlag({res => !res.entry.isValid },                  Console.RED+"\u2049"+Console.RESET,     "Incomplete")
-      ),
-      List(
-        ResultFlag(_.isEdited, Console.YELLOW+Console.BOLD+"e"+Console.RESET, "Edited")
-      ),
-      List(
-        ResultFlag(!_.alternatives.isEmpty, Console.BLUE+Console.BOLD+"+"+Console.RESET, "Multiple Alternatives")
-      )
-    )
 
     var columnsUsed = Set[Int]()
     var flagsUsed   = Set[ResultFlag]()
