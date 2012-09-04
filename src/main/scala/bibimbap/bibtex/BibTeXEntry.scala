@@ -267,27 +267,22 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
       }
     }
 
-    def printField(field : String) {
-      if(seqFields contains field) {  
-        printSeqField(field, seqFields(field))
-      } else {
-        printOptField(field, fields.get(field))
-      }
-    } 
-
     var remaining : Set[String] = allFields
-
     def printSubset(subset : Traversable[String]) {
       for(field <- subset if remaining(field)) {
-        printField(field)
+        if(seqFields contains field) {  
+          printSeqField(field, seqFields(field))
+        } else {
+          printOptField(field, fields.get(field))
+        }
         remaining -= field
       }
     }
 
     printSubset(preferredDisplayingOrder)
-    printSubset(requiredFields.flatMap(_.toFields))
-    printSubset(optionalFields)
-    printSubset(allFields)
+    printSubset(requiredFields.flatMap(_.toFields).toSeq.sorted)
+    printSubset(optionalFields.toSeq.sorted)
+    printSubset(allFields.toSeq.sorted)
 
     buffer.dropRight(2).append("\n}").toString
   }
