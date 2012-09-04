@@ -55,9 +55,7 @@ class Console(repl: ActorRef, settings: Settings, historyFileName: String) exten
       sender ! LineRead(reader.readLine(defaultHandle))
       out("")
     case ReadLineWithHandle(handle, oline) =>
-      out("")
       sender ! LineRead(reader.readLine(handle))
-      out("")
     case Out(msg: String) =>
       out(msg)
     case Info(msg: String) =>

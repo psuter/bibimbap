@@ -19,6 +19,13 @@ object BibTeXEntryTypes extends Enumeration {
   val TechReport =    Value("techreport")
   val Unpublished =   Value("unpublished")
 
+  def withNameOpt(name: String) = try {
+    Some(withName(name))
+  } catch {
+    case e: Throwable =>
+      None
+  }
+
   case class OneOf(fs: String*) {
     val set = fs.toSet
     def satisfiedBy(fields: Set[String]): Boolean = (set -- fields).isEmpty

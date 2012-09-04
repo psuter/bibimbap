@@ -13,6 +13,24 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
   lazy val resultsModule = modules("results")
 
   override def receive: Receive = {
+    case Command2("new", tpe) =>
+      BibTeXEntryTypes.withNameOpt(tpe).map(doAdd) match {
+        case Some(Some(e)) =>
+          val res = SearchResult(e, Set("add"), relevance = 1, isEdited = true)
+
+          console ! Out("")
+          console ! Success("New entry created!")
+          console ! Out("")
+
+          syncCommand(resultsModule, SearchResults(List(res)))
+        case None =>
+
+          console ! Error("Invalid entry type!")
+
+        case _ =>
+      }
+
+      sender ! CommandSuccess
     case Command2("edit", ind) =>
       syncMessage[SearchResults](resultsModule, GetResults(ind)) match {
         case Some(SearchResults(res)) =>
@@ -29,6 +47,42 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
       super.receive(x)
   }
 
+  def doAdd(tpe: BibTeXEntryTypes.BibTeXEntryType): Option[BibTeXEntry] = {
+    def getFieldValue(field: String): Option[String] = {
+      syncMessage[LineRead](console, ReadLineWithHandle(inBold("%20s").format(field)+" = ")) match {
+        case Some(LineRead("")) | Some(EOF) | None =>
+          None
+        case Some(LineRead(value)) =>
+          Some(value)
+      }
+    }
+
+    console ! Out("Entering bibtex entry: "+tpe)
+
+    val key = getFieldValue("entry key")
+
+    var fields    = Map[String, MString]()
+
+    console ! Out("Required fields:")
+    for (field <- BibTeXEntryTypes.requiredFieldsFor(tpe).flatMap(_.toFields)) getFieldValue(field) match {
+      case Some(v) =>
+        fields += field -> MString.fromJava(v)
+      case _ =>
+    }
+
+    console ! Out("Optional fields:")
+    for (field <- BibTeXEntryTypes.optionalFieldsFor(tpe)) getFieldValue(field) match {
+      case Some(v) =>
+        fields += field -> MString.fromJava(v)
+      case _ =>
+    }
+
+    BibTeXEntry.fromEntryMap(tpe, key, fields, console ! Error(_))   
+  }
+
+  def inBold(str: String): String    = if (settings.colors) Console.BOLD+str+Console.RESET else str
+  def inRedBold(str: String): String = if (settings.colors) Console.BOLD+Console.RED+str+Console.RESET else str
+
   def doEdit(res: SearchResult): SearchResult = {
     val entry   = res.entry
     var map     = entry.entryMap
@@ -38,8 +92,6 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
     val allStdFields     = BibTeXEntryTypes.allStdFields
     val meaningFulFields = entry.stdFields
 
-    def inBold(str: String): String    = if (settings.colors) Console.BOLD+str+Console.RESET else str
-    def inRedBold(str: String): String = if (settings.colors) Console.BOLD+Console.RED+str+Console.RESET else str
 
     def display() {
       entry.display(console ! Out(_), inBold, inRedBold)
@@ -110,6 +162,7 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
   }
 
   val helpItems = Map(
-    "edit"   -> HelpEntry("edit <result>",  "Edit the <results>th item from the last search result.")
+    "edit"   -> HelpEntry("edit <result>",  "Edit the <results>th item from the last search result."),
+    "new"    -> HelpEntry("new  <kind>",    "Add a new entry of type <kind>.")
   )
 }

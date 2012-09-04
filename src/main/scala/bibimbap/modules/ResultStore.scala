@@ -38,7 +38,6 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
     case SearchResults(newResults) =>
       results = newResults
-      displayResults()
 
       sender ! CommandSuccess
 

@@ -29,6 +29,7 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, 
     case Search(terms) =>
       val results = doSearch(terms)
       sender ! SearchResults(results)
+      sender ! ShowResults
 
     case SearchOne(terms) =>
       val results = doSearch(terms)
