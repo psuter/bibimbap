@@ -1,122 +1,125 @@
 package bibimbap
 package strings
 
-/** A wrapper around strings to support converting to and from different formats. */
-final class MString private[strings](val toJava : String) {
-  def toLaTeX : String = MString.javaToLaTeX(toJava)
-  def toASCII : String = MString.javaToASCII(toJava)
+///** A wrapper around strings to support converting to and from different formats. */
+//final class MString private[strings](val toJava : String) {
+//  def toLaTeX : String = MString.javaToLaTeX(toJava)
+//  def toASCII : String = MString.javaToASCII(toJava)
+//
+//  override def toString : String = toJava
+//
+//  final def isEmpty : Boolean = toJava.isEmpty
+//}
 
-  override def toString : String = toJava
+case class MString(latex: Option[String] = None, java: Option[String] = None, ascii: Option[String] = None) {
+  lazy val toLaTeX: String = latex.orElse(java.map(MString.javaToLaTeX)).orElse(ascii.map(MString.asciiToLaTeX)).get
+  lazy val toJava:  String = java.orElse(latex.map(MString.latexToJava)).orElse(ascii.map(MString.asciiToJava)).get
+  lazy val toASCII: String = ascii.orElse(java.map(MString.javaToASCII)).orElse(latex.map(MString.latexToASCII)).get
 
-  final def toIntOpt : Option[Int] = try {
-    Some(toJava.toInt)
-  } catch {
-    case nfe : NumberFormatException => None
-  }
-
-  final def isEmpty : Boolean = toJava.isEmpty
+  override def toString = { throw new Exception("Don't use MString.toString, use toJava/toLaTeX/toASCII") }
+  
+  assert(!latex.isEmpty || !java.isEmpty || !ascii.isEmpty)
 }
 
 object MString {
-  def fromJava(str : String) = new MString(str)
+  def fromJava(str : String)  = new MString(java = Some(str))
+  def fromLaTeX(str : String) = new MString(latex = Some(str))
+  def fromASCII(str : String) = new MString(ascii = Some(str))
 
-  def javaToLaTeX(str : String) = {
-    def substEntity(c : Char) : Seq[Char] = c match {
-      case '#' => """{\#}"""
-      case 'ç' => """\c{c}"""
-      case 'Ç' => """\c{C}"""
-      case 'á' => """\'{a}"""
-      case 'Á' => """\'{A}"""
-      case 'é' => """\'{e}"""
-      case 'É' => """\'{E}"""
-      case 'í' => """\'{\i}"""
-      case 'Í' => """\'{I}"""
-      case 'ó' => """\'{o}"""
-      case 'Ó' => """\'{O}"""
-      case 'ú' => """\'{u}"""
-      case 'Ú' => """\'{U}"""
-      case 'ý' => """\'{y}"""
-      case 'Ý' => """\'{Y}"""
-      case 'à' => """\`{a}"""
-      case 'À' => """\`{A}"""
-      case 'è' => """\`{e}"""
-      case 'È' => """\`{E}"""
-      case 'ì' => """\`{\i}"""
-      case 'Ì' => """\`{I}"""
-      case 'ò' => """\`{o}"""
-      case 'Ò' => """\`{O}"""
-      case 'ù' => """\`{u}"""
-      case 'Ù' => """\`{U}"""
-      case 'ỳ' => """\`{y}"""
-      case 'Ỳ' => """\`{Y}"""
-      case 'â' => """\^{a}"""
-      case 'Â' => """\^{A}"""
-      case 'ê' => """\^{e}"""
-      case 'Ê' => """\^{E}"""
-      case 'î' => """\^{\i}"""
-      case 'Î' => """\^{I}"""
-      case 'ô' => """\^{o}"""
-      case 'Ô' => """\^{O}"""
-      case 'û' => """\^{u}"""
-      case 'Û' => """\^{U}"""
-      case 'ŷ' => """\^{y}"""
-      case 'Ŷ' => """\^{Y}"""
-      case 'æ' => """{\ae}"""
-      case 'Æ' => """{\AE}"""
-      case 'å' => """{\aa}"""
-      case 'Å' => """{\AA}"""
-      case 'œ' => """{\oe}"""
-      case 'Œ' => """{\OE}"""
-      case 'ø' => """{\o}"""
-      case 'Ø' => """{\O}"""
-      case 'ä' => """\"{a}"""
-      case 'Ä' => """\"{A}"""
-      case 'ë' => """\"{e}"""
-      case 'Ë' => """\"{E}"""
-      case 'ï' => """\"{i}"""
-      case 'Ï' => """\"{I}"""
-      case 'ö' => """\"{o}"""
-      case 'Ö' => """\"{O}"""
-      case 'ü' => """\"{u}"""
-      case 'Ü' => """\"{U}"""
-      case 'ÿ' => """\"{y}"""
-      case 'Ÿ' => """\"{Y}"""
-      case 'α' => """$\alpha$"""
-      case 'β' => """$\beta$"""
-      case 'γ' => """$\gamma$"""
-      case 'δ' => """$\delta$"""
-      case 'ε' => """$\varepsilon$"""
-      case 'ϵ' => """$\epsilon$"""
-      case 'ζ' => """$\zeta$"""
-      case 'η' => """$\eta$"""
-      case 'θ' => """$\theta$"""
-      case 'ι' => """$\iota$"""
-      case 'κ' => """$\kappa$"""
-      case 'λ' => """$\lambda$"""
-      case 'μ' => """$\mu$"""
-      case 'ν' => """$\nu$"""
-      case 'ξ' => """$\xi$"""
-      case 'ο' => """$\omicron$"""
-      case 'π' => """$\pi$"""
-      case 'ρ' => """$\rho$"""
-      case 'ς' => """$\varsigma$"""
-      case 'σ' => """$\sigma$"""
-      case 'τ' => """$\tau$"""
-      case 'υ' => "$\\upsilon$"
-      case 'φ' => """$\phi$"""
-      case 'χ' => """$\chi$"""
-      case 'ψ' => """$\psi$"""
-      case 'ω' => """$\omega$"""
-      case x => Seq(x)
-    }
+  val mapJavaToLatex = Map[Char, Seq[Char]](
+    '#' -> """{\#}""",
+    'ç' -> """\c{c}""",
+    'Ç' -> """\c{C}""",
+    'á' -> """\'{a}""",
+    'Á' -> """\'{A}""",
+    'é' -> """\'{e}""",
+    'É' -> """\'{E}""",
+    'í' -> """\'{\i}""",
+    'Í' -> """\'{I}""",
+    'ó' -> """\'{o}""",
+    'Ó' -> """\'{O}""",
+    'ú' -> """\'{u}""",
+    'Ú' -> """\'{U}""",
+    'ý' -> """\'{y}""",
+    'Ý' -> """\'{Y}""",
+    'à' -> """\`{a}""",
+    'À' -> """\`{A}""",
+    'è' -> """\`{e}""",
+    'È' -> """\`{E}""",
+    'ì' -> """\`{\i}""",
+    'Ì' -> """\`{I}""",
+    'ò' -> """\`{o}""",
+    'Ò' -> """\`{O}""",
+    'ù' -> """\`{u}""",
+    'Ù' -> """\`{U}""",
+    'ỳ' -> """\`{y}""",
+    'Ỳ' -> """\`{Y}""",
+    'â' -> """\^{a}""",
+    'Â' -> """\^{A}""",
+    'ê' -> """\^{e}""",
+    'Ê' -> """\^{E}""",
+    'î' -> """\^{\i}""",
+    'Î' -> """\^{I}""",
+    'ô' -> """\^{o}""",
+    'Ô' -> """\^{O}""",
+    'û' -> """\^{u}""",
+    'Û' -> """\^{U}""",
+    'ŷ' -> """\^{y}""",
+    'Ŷ' -> """\^{Y}""",
+    'æ' -> """{\ae}""",
+    'Æ' -> """{\AE}""",
+    'å' -> """{\aa}""",
+    'Å' -> """{\AA}""",
+    'œ' -> """{\oe}""",
+    'Œ' -> """{\OE}""",
+    'ø' -> """{\o}""",
+    'Ø' -> """{\O}""",
+    'ä' -> """\"{a}""",
+    'Ä' -> """\"{A}""",
+    'ë' -> """\"{e}""",
+    'Ë' -> """\"{E}""",
+    'ï' -> """\"{i}""",
+    'Ï' -> """\"{I}""",
+    'ö' -> """\"{o}""",
+    'Ö' -> """\"{O}""",
+    'ü' -> """\"{u}""",
+    'Ü' -> """\"{U}""",
+    'ÿ' -> """\"{y}""",
+    'Ÿ' -> """\"{Y}""",
+    'α' -> """$\alpha$""",
+    'β' -> """$\beta$""",
+    'γ' -> """$\gamma$""",
+    'δ' -> """$\delta$""",
+    'ε' -> """$\varepsilon$""",
+    'ϵ' -> """$\epsilon$""",
+    'ζ' -> """$\zeta$""",
+    'η' -> """$\eta$""",
+    'θ' -> """$\theta$""",
+    'ι' -> """$\iota$""",
+    'κ' -> """$\kappa$""",
+    'λ' -> """$\lambda$""",
+    'μ' -> """$\mu$""",
+    'ν' -> """$\nu$""",
+    'ξ' -> """$\xi$""",
+    'ο' -> """$\omicron$""",
+    'π' -> """$\pi$""",
+    'ρ' -> """$\rho$""",
+    'ς' -> """$\varsigma$""",
+    'σ' -> """$\sigma$""",
+    'τ' -> """$\tau$""",
+    'υ' -> "$\\upsilon$",
+    'φ' -> """$\phi$""",
+    'χ' -> """$\chi$""",
+    'ψ' -> """$\psi$""",
+    'ω' -> """$\omega$"""
+  )
 
-    str.flatMap(substEntity)
+  lazy val mapLatexToJava = mapJavaToLatex.map{ case (to, from) => from.mkString -> to.toString }
+
+  def javaToLaTeX(str: String): String = {
+    str.flatMap(mapJavaToLatex.orElse({ case x => Seq(x) }))
   }
 
-  // To give the prettiest result, this function works in three phases.
-  //   1) substitute common European diacritics and other letters with romanized form
-  //   2) strip all remaining diacritics using Unicode normalization
-  //   3) remove all non-ascii characters.
   def javaToASCII(str : String) = {
     def transliterate(c : Char) : Seq[Char] = c match {
       case 'Ä' | 'Æ' => "AE"
@@ -168,4 +171,20 @@ object MString {
 
     removeDiacritics(str.flatMap(transliterate)).filter(isASCII).trim
   }
+
+  def latexToJava(str: String): String = {
+    import java.util.regex.Pattern
+
+    var res = str
+    for ((from, to) <- mapLatexToJava) {
+      res = res.replaceAll(Pattern.quote(from), to)
+    }
+    res
+  }
+
+  def asciiToJava(str: String): String = str
+
+  def latexToASCII(str: String): String = (latexToJava _ andThen javaToASCII)(str)
+
+  def asciiToLaTeX(str: String): String = (asciiToJava _ andThen javaToLaTeX)(str)
 }

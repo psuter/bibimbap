@@ -61,7 +61,7 @@ trait LuceneBackend {
       doc.add(new Field("__type", entry.tpe.toString, Field.Store.YES, Field.Index.NO))
 
       val sb = new StringBuilder()
-      entry.title.foreach(sb.append(_))
+      entry.title.foreach(t => sb.append(t.toJava))
       sb.append(" ")
       entry.authors.foreach { author =>
         sb.append(author.toJava)
@@ -69,7 +69,7 @@ trait LuceneBackend {
       }
       entry.journal.foreach(j => sb.append(j.toJava))
       entry.booktitle.foreach(b => sb.append(b.toJava))
-      entry.year.foreach(sb.append(_))
+      entry.year.foreach(y => sb.append(y.toJava))
 
       doc.add(new Field("__blob", sb.toString, Field.Store.NO, Field.Index.ANALYZED))
 

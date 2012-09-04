@@ -14,6 +14,7 @@ import java.net.URLEncoder
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.io.IOException
 
 import json._
 
@@ -34,6 +35,10 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
 
       extractJSONRecords(text).flatMap(recordToResult).toList
     } catch {
+      case ioe : IOException => {
+        console ! Warning("IO error: " + ioe.getLocalizedMessage)
+        Nil
+      }
       case ce : ConnectException => {
         console ! Warning("Connection error: " + ce.getLocalizedMessage)
         Nil
@@ -97,11 +102,11 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
 
     (record \ "title") match {
       case obj : JObject => {
-        val authors : MString = ((obj \ "dblp:authors" \ "dblp:author") match {
+        val authors : MString = MString.fromJava(((obj \ "dblp:authors" \ "dblp:author") match {
           case JArray(elems) => elems.collect { case JString(str) => str }
           case JString(single) => Seq(single)
           case _ => Nil
-        }).map(MString.fromJava(_)).mkString(" and ")
+        }).mkString(" and "))
 
         val title : MString = (obj \ "dblp:title" \ "text") match {
           case JString(str) => MString.fromJava(cleanupTitle(str))

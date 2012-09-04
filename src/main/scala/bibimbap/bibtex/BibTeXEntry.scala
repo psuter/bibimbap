@@ -230,7 +230,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
           school.map(_.toJava).getOrElse(
             howpublished.map(_.toJava).getOrElse("?"))))
 
-    val year = this.year.map(_.toString).getOrElse("?")
+    val year = this.year.map(_.toJava).getOrElse("?")
 
     names + ", " + title + ", " + where + ", " + year
   }
@@ -276,7 +276,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
     out(" Required fields:")
     for (f <- requiredFields.flatMap(_.toFields)) {
       if (entryMap contains f) {
-        out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap(f)))
+        out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap(f).toJava))
       } else {
         out(("   "+errorFormatter("%12s")+" = %s").format(f, "<missing>"))
       }
@@ -284,7 +284,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
     out("")
     out(" Optional fields for "+tpe+":")
     for (f <- optionalFields) {
-      out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap.getOrElse(f, "<missing>")))
+      out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap.get(f).map(_.toJava).getOrElse("<missing>")))
     }
 
     val extraFields = entryMap.keySet -- BibTeXEntryTypes.allStdFields
