@@ -2,7 +2,7 @@ package bibimbap
 
 import akka.actor._
 import jline._
-import java.io.File
+import java.io.{File, FileInputStream, FileDescriptor, PrintWriter, OutputStreamWriter}
 
 class Console(repl: ActorRef, settings: Settings, historyFileName: String) extends Actor with ActorHelpers {
   val console = self
@@ -13,7 +13,45 @@ class Console(repl: ActorRef, settings: Settings, historyFileName: String) exten
 
   var modules = List[ActorRef]()
 
-  val reader    = new ConsoleReader
+  var buffer: Option[String] = None
+
+  val terminal = Terminal.setupTerminal() match {
+    case u: UnixTerminal =>
+      new UnixTerminal {
+        override def isSupported = {
+          magicTrick()
+          super.isSupported
+        }
+      }
+    case w: WindowsTerminal =>
+      new WindowsTerminal {
+        override def isSupported = {
+          magicTrick()
+          super.isSupported
+        }
+      }
+    
+    case u: UnsupportedTerminal =>
+      new UnsupportedTerminal {
+        override def isSupported = {
+          magicTrick()
+          super.isSupported
+        }
+      }
+  }
+
+  val reader    = new ConsoleReader(new FileInputStream(FileDescriptor.in), 
+                                     new PrintWriter(new OutputStreamWriter(Console.out,
+                                      System.getProperty("jline.WindowsTerminal.output.encoding", System.getProperty("file.encoding")))), null, terminal)
+
+
+  private def magicTrick(): Unit = buffer match {
+    case Some(b) =>
+      reader.putString(b)
+      buffer = None
+    case _ =>
+  }
+
   val completor = new Completor {
     def complete(buffer: String, pos: Int, results: java.util.List[_]): Int = {
       import collection.JavaConversions._
@@ -50,12 +88,9 @@ class Console(repl: ActorRef, settings: Settings, historyFileName: String) exten
       this.modules = modules.values.toList
       sender ! CommandSuccess
 
-    case ReadLine =>
-      out("")
-      sender ! LineRead(reader.readLine(defaultHandle))
-      out("")
-    case ReadLineWithHandle(handle, oline) =>
-      sender ! LineRead(reader.readLine(handle))
+    case ReadLine(handle, oline) =>
+      buffer = oline
+      sender ! LineRead(reader.readLine(handle.getOrElse(defaultHandle)))
     case Out(msg: String) =>
       out(msg)
     case Info(msg: String) =>

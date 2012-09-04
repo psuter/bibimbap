@@ -79,12 +79,12 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
     case Start =>
       dispatchCommand(OnStartup(modules = modules))
       syncCommand(console, OnStartup(modules = modules))
-      self ! ReadLine
+      self ! ReadLine()
 
-    case ReadLine =>
+    case ReadLine(_, _) =>
       implicit val timeout = neverTimeout
 
-      syncMessage[LineRead](console, ReadLine) match {
+      syncMessage[LineRead](console, ReadLine()) match {
         case Some(EOF) =>
           // TODO: find a better way to exit
           sys.exit(0)
@@ -96,7 +96,7 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
         case _ =>
       }
 
-      self ! ReadLine
+      self ! ReadLine()
     case Shutdown =>
       dispatchCommand(OnShutdown())
       console ! Out("Bye.")

@@ -83,7 +83,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       console ! Warning("Managed file has been modified in the meantime!")
       var ask = true
       while(ask) {
-        syncMessage[LineRead](console, ReadLineWithHandle("(p)roceed (c)ancel (r)eload> ")) match {
+        syncMessage[LineRead](console, ReadLine(Some("(p)roceed (c)ancel (r)eload> "))) match {
           case Some(LineRead("c")) =>
             ask = false
             action = "cancel"
