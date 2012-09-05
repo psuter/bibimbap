@@ -25,6 +25,17 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
       }
       sender ! CommandSuccess
 
+    case Command2("open", ind) =>
+      getResults(ind) match {
+        case Some(rs) =>
+          for (r <- rs) {
+            doOpen(r)
+          }
+        case None =>
+          console ! Error("Invalid search result")
+      }
+      sender ! CommandSuccess
+
     case Command2("show", ind) =>
       getResults(ind) match {
         case Some(rs) =>
@@ -84,6 +95,41 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
         }
       case _ =>
         None
+    }
+  }
+
+  private def doOpen(res: SearchResult) {
+    import java.awt.Desktop
+    import java.net.URI
+
+    val ourl = res.entry.url.orElse(res.entry.link).map(_.toJava)
+
+    ourl match {
+      case Some(url) =>
+        try {
+          Desktop.getDesktop.browse(new URI(url))
+        } catch {
+          case ue: java.lang.UnsupportedOperationException =>
+            import scala.sys.process._
+
+            val logger = new ProcessLogger {
+              def out(s : =>String) = {}
+              def err(s : =>String) = console ! Error(s)
+              def buffer[T](f : =>T) = f
+            }
+
+            // Trying an alternative using url.open
+            settings.get("url", "open") match {
+              case Some(cmd) =>
+                (cmd+" "+url).run(logger)
+              case None =>
+                console ! Error("Error opening "+res.entry.getKey+": Desktop is unsupported and no url.open setting was found")
+            }
+          case e: Throwable =>
+            console ! Error("Error opening "+res.entry.getKey+": "+e.getMessage.trim)
+        } 
+      case _ =>
+        console ! Error("Error opening "+res.entry.getKey+": No url found")
     }
   }
 
@@ -163,6 +209,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     "list"   -> HelpEntry("list",             "Displays the current list of results."),
     "last"   -> HelpEntry("last",             "Displays the current list of results."),
     "bib"    -> HelpEntry("bib  <result>",    "Displays the bib entry for the <results>th search result."),
-    "show"   -> HelpEntry("show <result>",    "Displays the entry for the <results>th search result.")
+    "show"   -> HelpEntry("show <result>",    "Displays the entry for the <results>th search result."),
+    "open"   -> HelpEntry("open <result>",    "Opens the corresponding entry's url.")
   )
 }
