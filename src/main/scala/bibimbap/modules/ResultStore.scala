@@ -155,7 +155,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
       }
     }
     if (results.isEmpty) {
-      console ! Info("No match")
+      console ! Info("No result")
     }
   }
 

@@ -68,6 +68,7 @@ class Search(val repl: ActorRef, val console: ActorRef, val settings: Settings, 
                    res.map(_.relevance).max,
                    isEdited     = res.exists(_.isEdited),
                    isManaged    = res.exists(_.isManaged),
+                   oldEntry     = res.map(_.oldEntry).reduceLeft(_ orElse _),
                    alternatives = res.tail.map(_.entry).toSet.filter(_ != res.head.entry)
                  )
     }
