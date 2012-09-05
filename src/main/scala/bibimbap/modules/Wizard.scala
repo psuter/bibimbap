@@ -56,8 +56,8 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
     }
   }
 
-  private def inBold(str: String): String    = if (settings.colors) Console.BOLD+str+Console.RESET else str
-  private def inRedBold(str: String): String = if (settings.colors) Console.BOLD+Console.RED+str+Console.RESET else str
+  private def inBold(str: String): String    = settings.BOLD+str+settings.RESET
+  private def inRedBold(str: String): String = settings.BOLD+settings.RED+str+settings.RESET
 
   def doAdd(tpe: BibTeXEntryTypes.BibTeXEntryType): Option[BibTeXEntry] = {
 

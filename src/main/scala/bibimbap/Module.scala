@@ -43,10 +43,15 @@ trait Module extends Actor with ActorHelpers {
       val (res, index) = completeWithHelp(buffer, pos)
       sender ! Completed(res, index)
 
-    case CommandL(cmd, args) if helpItems contains cmd =>
-      val he = helpItems(cmd)
-      console ! Error("Incorrect use of "+cmd+":")
-      console ! Error(" Usage: "+he.command+": "+he.short)
+    case InputCommand(line) =>
+      var continue = true
+      for (he <- helpItems.keySet.toSeq.sortBy(-_.length) if continue && (line startsWith he)) {
+        val hi = helpItems(he)
+        console ! Error("Incorrect use of "+he+":")
+        console ! Error("Usage: "+hi.command+": "+hi.short)
+
+        continue = false;
+      }
       sender ! CommandSuccess
 
     case _ =>

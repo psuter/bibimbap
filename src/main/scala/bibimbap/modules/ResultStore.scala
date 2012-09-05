@@ -88,8 +88,8 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
   }
 
   private def doShow(res: SearchResult) {
-    def inBold(str: String): String    = if (settings.colors) Console.BOLD+str+Console.RESET else str
-    def inRedBold(str: String): String = if (settings.colors) Console.BOLD+Console.RED+str+Console.RESET else str
+    def inBold(str: String): String    = settings.BOLD+str+settings.RESET
+    def inRedBold(str: String): String = settings.BOLD+settings.RED+str+settings.RESET
     res.entry.display(console ! Out(_), inBold, inRedBold)
   }
 
@@ -101,23 +101,23 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
   val flagsColumns = List(
     List(
-      ResultFlag(_.isEdited, if (settings.colors) Console.YELLOW+Console.BOLD+"e"+Console.RESET else "e", "Edited")
+      ResultFlag(_.isEdited, settings.YELLOW+settings.BOLD+"e"+settings.RESET, "Edited")
     ),
     List(
-      ResultFlag(!_.alternatives.isEmpty, if (settings.colors) Console.BLUE+Console.BOLD+"+"+Console.RESET else "+", "Multiple Alternatives")
+      ResultFlag(!_.alternatives.isEmpty, settings.BLUE+settings.BOLD+"+"+settings.RESET, "Multiple Alternatives")
     ),
     List(
-      ResultFlag({res => res.isManaged && res.entry.isValid  },  if (settings.colors) Console.GREEN+"\u2714"+Console.RESET else "\u2714",   "Managed"),
-      ResultFlag({res => res.isManaged && !res.entry.isValid },  if (settings.colors) Console.RED+"\u2714"+Console.RESET else "\u2714",     "Managed (incomplete)"),
-      ResultFlag({res => !res.isManaged && !res.entry.isValid }, if (settings.colors) Console.RED+"\u2049"+Console.RESET else "\u2049",     "Incomplete")
+      ResultFlag({res => res.isManaged && res.entry.isValid  },  settings.GREEN+"\u2714"+settings.RESET,   "Managed"),
+      ResultFlag({res => res.isManaged && !res.entry.isValid },  settings.RED+"\u2714"+settings.RESET,     "Managed (incomplete)"),
+      ResultFlag({res => !res.isManaged && !res.entry.isValid }, settings.RED+"\u2049"+settings.RESET,     "Incomplete")
     )
   )
 
   private def displayResults(terms: List[String]) {
     def highlight(str: String): String = {
-      if (settings.colors && !terms.isEmpty) {
+      if (!terms.isEmpty) {
         import java.util.regex.Pattern
-        str.replaceAll("(?i)"+terms.map(Pattern.quote).mkString("(", "|", ")"), Console.BOLD+Console.RED+"$0"+Console.RESET)
+        str.replaceAll("(?i)"+terms.map(Pattern.quote).mkString("(", "|", ")"), settings.BOLD+settings.RED+"$0"+settings.RESET)
       } else {
         str
       }

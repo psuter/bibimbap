@@ -8,6 +8,16 @@ trait Settings {
 
   var colors = get("general", "colors").map(_ == "yes").getOrElse(true)
 
+
+
+  // Helpers for colors
+  val RED       = if(colors) Console.RED        else ""
+  val BLUE      = if(colors) Console.BLUE       else ""
+  val BOLD      = if(colors) Console.BOLD       else ""
+  val YELLOW    = if(colors) Console.YELLOW     else ""
+  val GREEN     = if(colors) Console.GREEN      else ""
+  val MAGENTA   = if(colors) Console.MAGENTA    else ""
+  val RESET     = if(colors) Console.RESET      else ""
 }
 
 object DefaultSettings extends Settings {
