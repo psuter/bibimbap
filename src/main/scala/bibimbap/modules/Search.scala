@@ -145,17 +145,29 @@ class Search(val repl: ActorRef,
     }
 
     val combined = for (res <- equivClasses) yield {
-      SearchResult(res.head.entry,
-                   res.flatMap(_.sources).toSet,
-                   res.map(_.relevance).max,
-                   isEdited     = res.exists(_.isEdited),
-                   isManaged    = res.exists(_.isManaged),
-                   oldEntry     = res.map(_.oldEntry).reduceLeft(_ orElse _),
-                   alternatives = res.tail.map(_.entry).toSet.filter(_ != res.head.entry)
-                 )
+      var mainEntry = res.head.entry
+      var fields = mainEntry.entryMap
+
+      for (entry <- res.tail.map(_.entry); (k, v) <- entry.entryMap if !fields.contains(k)) {
+        fields += k -> v
+      }
+
+      BibTeXEntry.fromEntryMap(mainEntry.tpe, mainEntry.key, fields, console ! Error(_)) match {
+        case Some(newEntry) =>
+          Some(SearchResult(newEntry,
+                       res.flatMap(_.sources).toSet,
+                       res.map(_.relevance).max,
+                       isEdited     = res.exists(_.isEdited),
+                       isManaged    = res.exists(_.isManaged),
+                       oldEntry     = res.map(_.oldEntry).reduceLeft(_ orElse _),
+                       alternatives = res.map(_.entry).toSet
+                     ))
+        case _ =>
+          None
+      }
     }
 
-    val sorted = combined.toList.sortBy(- _.relevance)
+    val sorted = combined.flatten.toList.sortBy(- _.relevance)
 
     sorted
   }

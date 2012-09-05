@@ -104,7 +104,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
       ResultFlag(_.isEdited, settings.YELLOW+settings.BOLD+"e"+settings.RESET, "Edited")
     ),
     List(
-      ResultFlag(!_.alternatives.isEmpty, settings.BLUE+settings.BOLD+"+"+settings.RESET, "Multiple Alternatives")
+      ResultFlag(_.alternatives.size > 1, settings.BLUE+settings.BOLD+"+"+settings.RESET, "Multiple Alternatives")
     ),
     List(
       ResultFlag({res => res.isManaged && res.entry.isValid  },  settings.GREEN+"\u2714"+settings.RESET,   "Managed"),
