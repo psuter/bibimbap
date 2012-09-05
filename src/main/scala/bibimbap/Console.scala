@@ -97,21 +97,21 @@ class Console(repl: ActorRef, settings: Settings, historyFileName: String) exten
       out("  "+msg)
     case Warning(msg: String) =>
       if (settings.colors) {
-        out(Console.YELLOW + "  [w]" + Console.RESET + " "+msg)
+        out(Console.YELLOW + "  \u27A4" + Console.RESET + "  "+msg)
       } else {
-        out("  [w] "+msg)
+        out("  [warn] "+msg)
       }
     case Error(msg: String) =>
       if (settings.colors) {
-        out(Console.RED + "  [!]" + Console.RESET + " "+msg)
+        out(Console.RED + "  \u27A4" + Console.RESET + "  "+msg)
       } else {
-        out("  [!] "+msg)
+        out("  [err] "+msg)
       }
     case Success(msg: String) =>
       if (settings.colors) {
-        out(Console.GREEN + "  [\u2713]" + Console.RESET + " "+msg)
+        out(Console.GREEN + "  \u27A4" + Console.RESET + "  "+msg)
       } else {
-        out("  [\u2713] "+msg)
+        out("  [ok] "+msg)
       }
 
   }

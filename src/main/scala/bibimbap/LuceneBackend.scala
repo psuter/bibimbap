@@ -26,6 +26,8 @@ trait LuceneBackend {
 
   protected var index: Directory = null
 
+  protected var keySet = Set[String]()
+
   def getNewWriter(): IndexWriter = {
     val config   = new IndexWriterConfig(Version.LUCENE_36, analyzer)
     new IndexWriter(index, config)
@@ -34,12 +36,29 @@ trait LuceneBackend {
   def initializeIndex() = {
     index  = getLuceneIndex
     getNewWriter().close()
+
+    foreachDocument { d =>
+      keySet += d.get("__key")
+    }
   }
+
+  def foreachDocument(f: Document => Unit) {
+    val reader = IndexReader.open(index)
+    for (i <- 0 until reader.maxDoc if !reader.isDeleted(i)) {
+      f(reader.document(i)) 
+    }
+
+    reader.close()
+  }
+
+  def containsKey(key: String) = keySet contains key
 
   def deleteEntryByKey(key: String) {
     val writer = getNewWriter()
     writer.deleteDocuments(new Term("__key", key))
     writer.close()
+
+    keySet -= key
   }
 
   def searchLucene(query: String): List[SearchResult] =
@@ -51,6 +70,10 @@ trait LuceneBackend {
   def addEntries(entries : Iterable[BibTeXEntry]) : Unit = {
     val writer = getNewWriter()
     for (entry <- entries) {
+      if (containsKey(entry.getKey)) {
+        writer.deleteDocuments(new Term("__key", entry.getKey))
+      }
+
       val doc = new Document()
 
       for((k,v) <- entry.entryMap) {
@@ -75,6 +98,8 @@ trait LuceneBackend {
 
       writer.addDocument(doc)
     }
+
+    keySet = keySet ++ entries.map(_.getKey)
 
     writer.close()
   }

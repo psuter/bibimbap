@@ -84,11 +84,13 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
     case ReadLine(_, _) =>
       implicit val timeout = neverTimeout
 
+      console ! Out("")
       syncMessage[LineRead](console, ReadLine()) match {
         case Some(EOF) =>
           // TODO: find a better way to exit
           sys.exit(0)
         case Some(LineRead(line)) =>
+          console ! Out("")
           val cmd = line.trim
           if(cmd != "") {
             dispatchCommand(InputCommand(cmd))

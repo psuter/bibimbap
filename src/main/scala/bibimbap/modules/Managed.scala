@@ -162,16 +162,19 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
         clipboard.setContents(stringSel, stringSel)
       } catch {
         case e: java.awt.HeadlessException =>
-          console ! Warning("Could not store in clipboard: "+e.getMessage.trim)
+          // console ! Warning("Could not store in clipboard: "+e.getMessage.trim)
       }
 
       console ! Success("Entry key: \\cite{"+res.entry.getKey+"}")
     }
 
-    if (!res.isManaged || res.isEdited) {
+    if ((!res.isManaged && !containsKey(res.entry.getKey)) || res.isEdited) {
       val action = integrityCheck()
 
       if (action == "proceed") {
+        if (!res.oldEntry.isEmpty) {
+          deleteEntryByKey(res.oldEntry.get.getKey)
+        }
         addEntry(res.entry)
 
         writeManagedFile()
@@ -189,7 +192,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
         console ! Success("File reloaded!")
       }
     } else {
-      console ! Success("Entry already imported as is!")
+      console ! Warning("Entry already imported as is!")
       displayImported()
     }
 

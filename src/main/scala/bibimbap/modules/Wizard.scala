@@ -63,62 +63,48 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
 
     console ! Out("Entering bibtex entry: "+tpe)
 
-    var fields    = Map[String, MString]()
-
-    val key = getFieldValue("entry key")
-
-    console ! Out("Required fields:")
-    for (field <- BibTeXEntryTypes.requiredFieldsFor(tpe).flatMap(_.toFields)) getFieldValue(field) match {
-      case Some(v) =>
-        fields += field -> MString.fromJava(v)
-      case _ =>
-    }
-
-    console ! Out("Optional fields:")
-    for (field <- BibTeXEntryTypes.optionalFieldsFor(tpe)) getFieldValue(field) match {
-      case Some(v) =>
-        fields += field -> MString.fromJava(v)
-      case _ =>
-    }
-
-    BibTeXEntry.fromEntryMap(tpe, key, fields, console ! Error(_))   
+    editFields(tpe, Map(), None)
   }
 
   private def displayEntry(entry: BibTeXEntry) {
     entry.display(console ! Out(_), inBold, inRedBold)
   }
 
-  def doEdit(res: SearchResult): SearchResult = {
-    val entry   = res.entry
-    var tpe     = entry.tpe
-    var fields  = entry.entryMap
+  def editFields(tpe: BibTeXEntryTypes.BibTeXEntryType,
+                 initFields: Map[String, MString],
+                 initKey: Option[String]): Option[BibTeXEntry] = {
 
+    var fields           = initFields
     val allStdFields     = BibTeXEntryTypes.allStdFields
-    val meaningFulFields = entry.stdFields
 
-    console ! Out("Editing BibTeX entry: "+entry.getKey)
+    val key = getFieldValue("entry key", initKey)
 
-    val key = getFieldValue("entry key", Some(entry.getKey))
-
-    console ! Out("Required fields:")
+    console ! Out("")
+    console ! Out("  Required fields:")
     for (field <- BibTeXEntryTypes.requiredFieldsFor(tpe).flatMap(_.toFields)) getFieldValue(field, fields.get(field).map(_.toJava)) match {
       case Some(v) =>
         fields += field -> MString.fromJava(v)
       case _ =>
     }
 
-    console ! Out("Optional fields:")
+    console ! Out("")
+    console ! Out("  Optional fields:")
     for (field <- BibTeXEntryTypes.optionalFieldsFor(tpe)) getFieldValue(field, fields.get(field).map(_.toJava)) match {
       case Some(v) =>
         fields += field -> MString.fromJava(v)
       case _ =>
     }
 
-    BibTeXEntry.fromEntryMap(entry.tpe, key, fields, console ! Error(_)) match {
+    BibTeXEntry.fromEntryMap(tpe, key, fields, console ! Error(_))
+  }
+  
+  def doEdit(res: SearchResult): SearchResult = {
+
+    editFields(res.entry.tpe, res.entry.entryMap, Some(res.entry.getKey)) match {
       case Some(entry) =>
         if (entry != res.entry) {
-          console ! Success("Entry edited!")
-          res.copy(entry = entry, isEdited = true)
+          console ! Success("Entry modified!")
+          res.copy(entry = entry, isEdited = true, oldEntry = res.oldEntry.orElse(Some(res.entry)))
         } else {
           console ! Success("Entry not modified!")
           res

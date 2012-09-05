@@ -288,25 +288,29 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
   }
 
   def display(out: String => Unit, fieldFormatter: String => String, errorFormatter: String => String) {
-    out(" Entry type: "+tpe)
-    out(" Required fields:")
+    val missingVal = ""
+
+    out("  Entry type : "+tpe)
+    out("  Entry key  : "+getKey)
+    out("")
+    out("  Required fields:")
     for (f <- requiredFields.flatMap(_.toFields)) {
       if (entryMap contains f) {
         out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap(f).toJava))
       } else {
-        out(("   "+errorFormatter("%12s")+" = %s").format(f, "<missing>"))
+        out(("   "+errorFormatter("%12s")+" = %s").format(f, missingVal))
       }
     }
     out("")
-    out(" Optional fields for "+tpe+":")
+    out("  Optional fields for "+tpe+":")
     for (f <- optionalFields) {
-      out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap.get(f).map(_.toJava).getOrElse("<missing>")))
+      out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap.get(f).map(_.toJava).getOrElse(missingVal)))
     }
 
     val extraFields = entryMap.keySet -- BibTeXEntryTypes.allStdFields
     if (!extraFields.isEmpty) {
       out("")
-      out(" Extra fields:")
+      out("  Extra fields:")
       for (f <- extraFields) {
         out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap(f).toJava))
       }

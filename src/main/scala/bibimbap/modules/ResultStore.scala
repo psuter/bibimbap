@@ -101,15 +101,15 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
   val flagsColumns = List(
     List(
-      ResultFlag({res => res.isManaged && res.entry.isValid  }, if (settings.colors) Console.GREEN+"\u2714"+Console.RESET else "\u2714",   "Managed"),
-      ResultFlag({res => res.isManaged && !res.entry.isValid }, if (settings.colors) Console.RED+"\u2714"+Console.RESET else "\u2714",     "Managed (incomplete)"),
-      ResultFlag({res => !res.entry.isValid },                  if (settings.colors) Console.RED+"\u2049"+Console.RESET else "\u2049",     "Incomplete")
-    ),
-    List(
       ResultFlag(_.isEdited, if (settings.colors) Console.YELLOW+Console.BOLD+"e"+Console.RESET else "e", "Edited")
     ),
     List(
       ResultFlag(!_.alternatives.isEmpty, if (settings.colors) Console.BLUE+Console.BOLD+"+"+Console.RESET else "+", "Multiple Alternatives")
+    ),
+    List(
+      ResultFlag({res => res.isManaged && res.entry.isValid  },  if (settings.colors) Console.GREEN+"\u2714"+Console.RESET else "\u2714",   "Managed"),
+      ResultFlag({res => res.isManaged && !res.entry.isValid },  if (settings.colors) Console.RED+"\u2714"+Console.RESET else "\u2714",     "Managed (incomplete)"),
+      ResultFlag({res => !res.isManaged && !res.entry.isValid }, if (settings.colors) Console.RED+"\u2049"+Console.RESET else "\u2049",     "Incomplete")
     )
   )
 
