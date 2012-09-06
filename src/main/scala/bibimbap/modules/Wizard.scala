@@ -88,8 +88,11 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
     }
     val key = getFieldValue("entry key", false, initKey)
 
-    for (field <- BibTeXEntryTypes.requiredFieldsFor(tpe).flatMap(_.toFields)) {
-     getFieldValue(field, true, fields.get(field).map(_.toJava)) match {
+    for (reqFields <- BibTeXEntryTypes.requiredFieldsFor(tpe); field <- reqFields.toFields) {
+      val otherFields = fields - field
+      val isStillReq  = !reqFields.satisfiedBy(otherFields.keySet)
+
+     getFieldValue(field, isStillReq, fields.get(field).map(_.toJava)) match {
         case Some(v) =>
           fields += field -> MString.fromJava(v)
         case _ =>
