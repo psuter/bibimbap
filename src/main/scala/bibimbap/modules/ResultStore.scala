@@ -163,7 +163,7 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
     def highlight(str: String): String = {
       if (!terms.isEmpty) {
         import java.util.regex.Pattern
-        str.replaceAll("(?i)"+terms.map(Pattern.quote).mkString("(", "|", ")"), settings.BOLD+settings.RED+"$0"+settings.RESET)
+        str.replaceAll("(?i)"+terms.map(Pattern.quote).mkString("(", "|", ")"), settings.UNDERLINED+"$0"+settings.RESET)
       } else {
         str
       }
