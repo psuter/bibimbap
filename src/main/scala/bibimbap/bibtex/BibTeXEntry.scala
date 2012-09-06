@@ -31,7 +31,7 @@ object BibTeXEntryTypes extends Enumeration {
 
   case class OneOf(fs: String*) {
     val set = fs.toSet
-    def satisfiedBy(fields: Set[String]): Boolean = (set -- fields).isEmpty
+    def satisfiedBy(fields: Set[String]): Boolean = !(set & fields).isEmpty
 
     def toFields = fs.toList
   }
