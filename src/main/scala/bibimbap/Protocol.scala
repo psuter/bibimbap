@@ -1,5 +1,7 @@
 package bibimbap
 
+import bibtex.BibTeXEntry
+
 import akka.actor.ActorRef
 
 case object Start
@@ -42,6 +44,11 @@ case class Search(terms: List[String])
 //  => SearchOne(terms)
 //  <= SearchResults(Nil  |  x :: Nil)
 case class SearchOne(terms: List[String])
+
+//  => Consolidate(entry)
+//  <= Consolidated(newentry)
+case class Consolidate(entry: BibTeXEntry)
+case class Consolidated(entry: BibTeXEntry)
 
 case class SearchResults(entries: List[SearchResult])
 

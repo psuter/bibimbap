@@ -19,7 +19,10 @@ object BibTeXEntryTypes extends Enumeration {
   val TechReport =    Value("techreport")
   val Unpublished =   Value("unpublished")
 
-  def withNameOpt(name: String) = try {
+  def withNameOpt(name: Option[String]): Option[BibTeXEntryType] =
+    name.map(withNameOpt(_)).flatten
+
+  def withNameOpt(name: String): Option[BibTeXEntryType] = try {
     Some(withName(name))
   } catch {
     case e: Throwable =>
@@ -36,37 +39,41 @@ object BibTeXEntryTypes extends Enumeration {
   import language.implicitConversions
   implicit def strToOneOf(str: String) = OneOf(str)
 
-  val requiredFieldsFor = Map[BibTeXEntryType, Set[OneOf]](
-    Article         -> Set("author", "title", "journal", "year"),
-    Book            -> Set(OneOf("author", "editor"), "title", "publisher", "year"),
-    Booklet         -> Set("title"),
-    InBook          -> Set(OneOf("author", "editor"), "title", OneOf("chapter", "pages"), "publisher", "year"),
-    InCollection    -> Set("author", "title", "booktitle", "year"),
-    InProceedings   -> Set("author", "title", "booktitle", "year"),
-    Manual          -> Set("title"),
-    MastersThesis   -> Set("author", "title", "school", "year"),
-    Misc            -> Set(),
-    PhDThesis       -> Set("author", "title", "school", "year"),
-    Proceedings     -> Set("title", "year"),
-    TechReport      -> Set("author", "title", "institution", "year"),
-    Unpublished     -> Set("author", "title", "note")
-  ).withDefaultValue(Set())
+  val requiredFieldsFor = Map[BibTeXEntryType, List[OneOf]](
+    Article         -> List("title", "author", "journal", "year"),
+    Book            -> List("title", OneOf("author", "editor"), "publisher", "year"),
+    Booklet         -> List("title"),
+    InBook          -> List("title", OneOf("author", "editor"), OneOf("chapter", "pages"), "publisher", "year"),
+    InCollection    -> List("title", "author", "booktitle", "year"),
+    InProceedings   -> List("title", "author", "booktitle", "year"),
+    Manual          -> List("title"),
+    MastersThesis   -> List("title", "author", "school", "year"),
+    Misc            -> List(),
+    PhDThesis       -> List("title", "author", "school", "year"),
+    Proceedings     -> List("title", "year"),
+    TechReport      -> List("title", "author", "institution", "year"),
+    Unpublished     -> List("title", "author", "note")
+  ).withDefaultValue(List())
+
+  def requiredFieldsFor(otpe: Option[BibTeXEntryType]): List[OneOf] = otpe.map(requiredFieldsFor).getOrElse(List())
 
   val optionalFieldsFor = Map(
-    Article         -> Set("volume", "number", "pages", "month", "note", "key"),
-    Book            -> Set("volume", "series", "address", "edition", "month", "note", "key", "pages"),
-    Booklet         -> Set("author", "howpublished", "address", "month", "year", "note", "key"),
-    InBook          -> Set("volume", "series", "address", "edition", "month", "note", "key"),
-    InCollection    -> Set("editor", "pages", "organization", "publisher", "address", "month", "note", "key"),
-    InProceedings   -> Set("editor", "pages", "organization", "publisher", "address", "month", "note", "key"),
-    Manual          -> Set("author", "organization", "edition", "address", "year", "month", "note", "key"),
-    MastersThesis   -> Set("address", "month", "note", "key"),
-    Misc            -> Set("author", "howpublished", "title", "month", "year", "note", "key"),
-    PhDThesis       -> Set("address", "month", "note", "key"),
-    Proceedings     -> Set("editor", "organization", "publisher", "address", "month", "note", "key"),
-    TechReport      -> Set("type", "number", "address", "month", "note", "key"),
-    Unpublished     -> Set("month", "year", "key")
-  ).withDefaultValue(Set())
+    Article         -> List("volume", "number", "pages", "month", "note", "key"),
+    Book            -> List("volume", "series", "address", "edition", "month", "note", "key", "pages"),
+    Booklet         -> List("author", "howpublished", "address", "month", "year", "note", "key"),
+    InBook          -> List("volume", "series", "address", "edition", "month", "note", "key"),
+    InCollection    -> List("editor", "pages", "organization", "publisher", "address", "month", "note", "key"),
+    InProceedings   -> List("editor", "pages", "organization", "publisher", "address", "month", "note", "key"),
+    Manual          -> List("author", "organization", "edition", "address", "year", "month", "note", "key"),
+    MastersThesis   -> List("address", "month", "note", "key"),
+    Misc            -> List("author", "howpublished", "title", "month", "year", "note", "key"),
+    PhDThesis       -> List("address", "month", "note", "key"),
+    Proceedings     -> List("editor", "organization", "publisher", "address", "month", "note", "key"),
+    TechReport      -> List("type", "number", "address", "month", "note", "key"),
+    Unpublished     -> List("month", "year", "key")
+  ).withDefaultValue(List())
+
+  def optionalFieldsFor(otpe: Option[BibTeXEntryType]): List[String] = otpe.map(optionalFieldsFor).getOrElse(List())
 
   val allStdFields = Set("address", "abstract", "annote", "author",
       "booktitle", "chapter", "crossref", "edition", "editor", "eprint",
@@ -79,7 +86,7 @@ case class InconsistentBibTeXEntry(msg: String) extends Exception(msg)
 
 // This datatypes and all the following ones assume crossrefs have been
 // "resolved" into all entries.
-case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
+case class BibTeXEntry(tpe: Option[BibTeXEntryTypes.BibTeXEntryType],
                        key: Option[String],
                        fields: Map[String, MString],
                        seqFields: Map[String, Seq[MString]]) extends Serializable {
@@ -159,6 +166,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
     missingReqFields.isEmpty
   }
 
+  def getType: BibTeXEntryTypes.BibTeXEntryType = tpe.getOrElse(BibTeXEntryTypes.Misc)
   def getKey: String = key.getOrElse(generateKey)
 
   def generateKey: String = {
@@ -247,7 +255,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
   private val preferredDisplayingOrder : Seq[String] = List("title", "author", "editor", "booktitle", "journal", "year")
   def toStringWithKey(key : String) : String = {
     val buffer = new StringBuilder
-    buffer.append("@" + tpe + "{" + key + ",\n")
+    buffer.append("@" + getType + "{" + key + ",\n")
 
     def printOptField(name : String, value : Option[MString]) {
       value.foreach(content => {
@@ -290,7 +298,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
   def display(out: String => Unit, fieldFormatter: String => String, errorFormatter: String => String) {
     val missingVal = ""
 
-    out("  Entry type : "+tpe)
+    out("  Entry type : "+tpe.getOrElse(missingVal))
     out("  Entry key  : "+getKey)
     out("")
     out("  Required fields:")
@@ -302,7 +310,7 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
       }
     }
     out("")
-    out("  Optional fields for "+tpe+":")
+    out("  Optional fields:")
     for (f <- optionalFields) {
       out(("   "+fieldFormatter("%12s")+" = %s").format(f, entryMap.get(f).map(_.toJava).getOrElse(missingVal)))
     }
@@ -319,7 +327,10 @@ case class BibTeXEntry(tpe: BibTeXEntryTypes.BibTeXEntryType,
 }
 
 object BibTeXEntry {
-  def fromEntryMap(tpe: BibTeXEntryTypes.BibTeXEntryType, key: Option[String], map : Map[String,MString], onError: String => Unit) : Option[BibTeXEntry] = {
+  def fromEntryMap(tpe: Option[BibTeXEntryTypes.BibTeXEntryType],
+                   key: Option[String],
+                   map : Map[String,MString],
+                   onError: String => Unit) : Option[BibTeXEntry] = {
     try {
       val isSeqField = Set("author", "editor")
 

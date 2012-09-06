@@ -13,9 +13,9 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
   lazy val resultsModule = modules("results")
 
   override def receive: Receive = {
-    case Command2("new", tpe) =>
-      BibTeXEntryTypes.withNameOpt(tpe).map(doAdd) match {
-        case Some(Some(e)) =>
+    case CommandL("new", args) if args.size <= 1 =>
+      doAdd(args.headOption.map(BibTeXEntryTypes.withNameOpt(_)).flatten) match {
+        case Some(e) =>
           val res = SearchResult(e, Set("add"), relevance = 1, isEdited = true)
 
           console ! Out("")
@@ -23,10 +23,6 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
           console ! Out("")
 
           syncCommand(resultsModule, SearchResults(List(res)))
-        case None =>
-
-          console ! Error("Invalid entry type!")
-
         case _ =>
       }
 
@@ -47,8 +43,13 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
       super.receive(x)
   }
 
-  private def getFieldValue(field: String, value: Option[String] = None): Option[String] = {
-    syncMessage[LineRead](console, ReadLine(Some(inBold("%20s").format(field)+" = "), value)) match {
+  private def getFieldValue(field: String, isReq: Boolean = false, value: Option[String] = None): Option[String] = {
+    val fieldFormatted = if (isReq)
+        inBold("%18s "+settings.RED+"*").format(field)
+      else
+        inBold("%20s").format(field)
+
+    syncMessage[LineRead](console, ReadLine(Some(fieldFormatted+" = "), value)) match {
       case Some(LineRead("")) | Some(EOF) | None =>
         None
       case Some(LineRead(value)) =>
@@ -59,9 +60,11 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
   private def inBold(str: String): String    = settings.BOLD+str+settings.RESET
   private def inRedBold(str: String): String = settings.BOLD+settings.RED+str+settings.RESET
 
-  def doAdd(tpe: BibTeXEntryTypes.BibTeXEntryType): Option[BibTeXEntry] = {
+  def doAdd(tpe: Option[BibTeXEntryTypes.BibTeXEntryType]): Option[BibTeXEntry] = {
 
-    console ! Out("Entering bibtex entry: "+tpe)
+    if (!tpe.isEmpty) {
+      console ! Out("Entering bibtex entry: "+tpe.get)
+    }
 
     editFields(tpe, Map(), None)
   }
@@ -70,29 +73,35 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
     entry.display(console ! Out(_), inBold, inRedBold)
   }
 
-  def editFields(tpe: BibTeXEntryTypes.BibTeXEntryType,
+  def editFields(initType: Option[BibTeXEntryTypes.BibTeXEntryType],
                  initFields: Map[String, MString],
                  initKey: Option[String]): Option[BibTeXEntry] = {
 
+    var tpe              = initType 
     var fields           = initFields
     val allStdFields     = BibTeXEntryTypes.allStdFields
 
-    val key = getFieldValue("entry key", initKey)
-
-    console ! Out("")
-    console ! Out("  Required fields:")
-    for (field <- BibTeXEntryTypes.requiredFieldsFor(tpe).flatMap(_.toFields)) getFieldValue(field, fields.get(field).map(_.toJava)) match {
-      case Some(v) =>
-        fields += field -> MString.fromJava(v)
+    tpe match {
+      case None =>
+       tpe = BibTeXEntryTypes.withNameOpt(getFieldValue("entry type", false, None))
       case _ =>
     }
+    val key = getFieldValue("entry key", false, initKey)
 
-    console ! Out("")
-    console ! Out("  Optional fields:")
-    for (field <- BibTeXEntryTypes.optionalFieldsFor(tpe)) getFieldValue(field, fields.get(field).map(_.toJava)) match {
-      case Some(v) =>
-        fields += field -> MString.fromJava(v)
-      case _ =>
+    for (field <- BibTeXEntryTypes.requiredFieldsFor(tpe).flatMap(_.toFields)) {
+     getFieldValue(field, true, fields.get(field).map(_.toJava)) match {
+        case Some(v) =>
+          fields += field -> MString.fromJava(v)
+        case _ =>
+      }
+    }
+
+    for (field <- BibTeXEntryTypes.optionalFieldsFor(tpe)) {
+      getFieldValue(field, false, fields.get(field).map(_.toJava)) match {
+        case Some(v) =>
+          fields += field -> MString.fromJava(v)
+        case _ =>
+      }
     }
 
     BibTeXEntry.fromEntryMap(tpe, key, fields, console ! Error(_))

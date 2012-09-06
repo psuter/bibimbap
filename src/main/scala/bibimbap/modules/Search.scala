@@ -152,7 +152,7 @@ class Search(val repl: ActorRef,
         fields += k -> v
       }
 
-      BibTeXEntry.fromEntryMap(mainEntry.tpe, mainEntry.key, fields, console ! Error(_)) match {
+      BibTeXEntry.fromEntryMap(res.map(_.entry.tpe).reduceLeft(_ orElse _), mainEntry.key, fields, console ! Error(_)) match {
         case Some(newEntry) =>
           Some(SearchResult(newEntry,
                        res.flatMap(_.sources).toSet,

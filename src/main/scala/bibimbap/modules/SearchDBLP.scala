@@ -155,7 +155,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
 
             val map = omap.filterNot(_._2.isEmpty).mapValues(_.get)
 
-            val entry = BibTeXEntry.fromEntryMap(BibTeXEntryTypes.InProceedings, optKey, map, console ! Error(_))
+            val entry = BibTeXEntry.fromEntryMap(Some(BibTeXEntryTypes.InProceedings), optKey, map, console ! Error(_))
 
             entry.map(SearchResult(_, Set(source), score))
           }
@@ -189,7 +189,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
 
               val map = omap.filterNot(_._2.isEmpty).mapValues(_.get)
 
-              BibTeXEntry.fromEntryMap(BibTeXEntryTypes.Article, optKey, map, console ! Error(_)).map(SearchResult(_, Set(source), score))
+              BibTeXEntry.fromEntryMap(Some(BibTeXEntryTypes.Article), optKey, map, console ! Error(_)).map(SearchResult(_, Set(source), score))
             }
           }
 

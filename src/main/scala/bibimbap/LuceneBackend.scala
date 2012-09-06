@@ -81,7 +81,7 @@ trait LuceneBackend {
       }
 
       doc.add(new Field("__key",  entry.getKey, Field.Store.YES, Field.Index.NOT_ANALYZED))
-      doc.add(new Field("__type", entry.tpe.toString, Field.Store.YES, Field.Index.NO))
+      doc.add(new Field("__type", entry.tpe.map(_.toString).getOrElse(""), Field.Store.YES, Field.Index.NO))
 
       val sb = new StringBuilder()
       entry.title.foreach(t => sb.append(t.toJava))
@@ -130,7 +130,7 @@ trait LuceneBackend {
       case s    => Some(s)
     }
 
-    val kind = BibTeXEntryTypes.withName(document.get("__type"))
+    val kind = BibTeXEntryTypes.withNameOpt(document.get("__type"))
 
     BibTeXEntry.fromEntryMap(kind, optKey, em, console ! Error(_))
   }
