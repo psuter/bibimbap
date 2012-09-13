@@ -1,1 +1,2 @@
-- Complete this todo
+- Implement consolidate
+- World domination
