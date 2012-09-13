@@ -22,11 +22,17 @@ class Search(val repl: ActorRef,
   private def addSource(path: String) {
     val actor = context.actorOf(Props(new SearchBibtex(self, console, settings, path)))
 
-    syncCommand(actor, Start)
+    syncCommand(actor, Start) match {
+      case Some(CommandSuccess) =>
+        searchSources = searchSources :+ SearchSource(actor, "bibtex: "+path)
+        console ! Success("Source added!")
+      case Some(CommandError(err)) =>
+        console ! Error("Error adding source: "+err)
+      case Some(CommandException(e)) =>
+        console ! Error("Error adding source: "+e.getMessage)
+      case _ =>
+    }
 
-    searchSources = searchSources :+ SearchSource(actor, "bibtex: "+path)
-
-    console ! Success("Source added!")
   }
 
   override def receive: Receive = {

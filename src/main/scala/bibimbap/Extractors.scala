@@ -34,7 +34,13 @@ abstract class Indices {
 }
 
 object AllIndices extends Indices {
-  def within[T](lst: List[T]): Option[List[T]] = Some(lst)
+  def within[T](lst: List[T]): Option[List[T]] = {
+    if (lst.isEmpty) {
+      None
+    } else {
+      Some(lst)
+    }
+  }
 }
 
 case class SelectedIndices(indices: Traversable[Int]) extends Indices {

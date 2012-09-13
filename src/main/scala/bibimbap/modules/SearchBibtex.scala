@@ -16,9 +16,14 @@ class SearchBibtex(val repl: ActorRef, val console: ActorRef, val settings: Sett
 
   override def receive: Receive = {
     case Start =>
-      val parser = new BibTeXParser(Source.fromFile(path), console ! Warning(_))
-      addEntries(parser.entries)
-      sender ! CommandSuccess
+      try {
+        val parser = new BibTeXParser(Source.fromFile(path), console ! Warning(_))
+        addEntries(parser.entries)
+        sender ! CommandSuccess
+      } catch {
+        case e: Throwable =>
+          sender ! CommandException(e)
+      }
     case x =>
       super.receive(x)
     }
