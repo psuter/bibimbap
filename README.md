@@ -47,3 +47,29 @@ The simplest way of running bibimbap is to generate a single jar file that inclu
     $ sbt assembly
 
 The result will be in `target/bibimbap-assembly-???.jar`. You can run it using `java -jar ...`.
+
+Features
+--------
+
+
+Searching:
+
+`bibimbap` allows you to search both online and offline sources. By default it
+will use one online source, DBLP, and two local sources: one local cache and
+your `managed.bib` file.
+
+You can disable sources, or add new local bib files as sources.
+
+When displaying search results `bibimbap` informs you if the BibTeX entry is
+partially missing.
+
+Editing:
+
+`bibimbap` allows you to edit BibTeX entry directly within the tool, and will
+indicate BibTeX fields that are considered to be required by the standard.
+
+
+Creating:
+
+You can create BibTex entries from scratch directly in `bibimbap`. The editor
+will ask you to fill the fields corresponding to the entry type.

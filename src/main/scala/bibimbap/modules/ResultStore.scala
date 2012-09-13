@@ -14,8 +14,8 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
       displayResults(Nil)
       sender ! CommandSuccess
 
-    case Command2("bib", ind) =>
-      getResults(ind) match {
+    case Command2("bib", Indices(ids)) =>
+      ids.within(results) match {
         case Some(rs) =>
           for (r <- rs) {
             doBib(r)
@@ -25,8 +25,8 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
       }
       sender ! CommandSuccess
 
-    case Command2("open", ind) =>
-      getResults(ind) match {
+    case Command2("open", Indices(ids)) =>
+      ids.within(results) match {
         case Some(rs) =>
           for (r <- rs) {
             doOpen(r)
@@ -36,8 +36,8 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
       }
       sender ! CommandSuccess
 
-    case Command2("show", ind) =>
-      getResults(ind) match {
+    case Command2("show", Indices(ids)) =>
+      ids.within(results) match {
         case Some(rs) =>
           for (r <- rs) {
             doShow(r)
@@ -52,8 +52,8 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
       sender ! CommandSuccess
 
-    case ReplaceResults(ind, newResults) =>
-      getResults(ind) match {
+    case ReplaceResults(ids, newResults) =>
+      ids.within(results) match {
         case Some(rs) =>
           results = results.map((rs zip newResults).toMap.orElse{ case x => x })
         case None =>
@@ -61,8 +61,8 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
       }
       sender ! CommandSuccess
 
-    case GetResults(index) =>
-      sender ! SearchResults(getResults(index).getOrElse(Nil))
+    case GetResults(ids) =>
+      sender ! SearchResults(ids.within(results).getOrElse(Nil))
 
     case ShowResults(terms) =>
       displayResults(terms)
@@ -70,32 +70,6 @@ class ResultStore(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
     case x =>
       super.receive(x)
-  }
-
-  private val Range  = """(\d+)-(\d+)""".r
-  private val Single = """(\d+)""".r
-  private def getResults(index: String): Option[List[SearchResult]] = {
-    index match {
-      case "*" =>
-        Some(results)
-      case Range(lower, upper) =>
-        val l = lower.toInt
-        val u = upper.toInt
-        if (l <= u && l >= 0 && u < results.size) {
-          Some(results.slice(l, u + 1))
-        } else {
-          None
-        }
-      case Single(index) =>
-        val i = index.toInt
-        if (i < results.size && i >= 0) {
-          Some(List(results(i)))
-        } else {
-          None
-        }
-      case _ =>
-        None
-    }
   }
 
   private def doOpen(res: SearchResult) {

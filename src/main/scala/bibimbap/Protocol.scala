@@ -56,7 +56,7 @@ case class SearchResults(entries: List[SearchResult])
 // Protocol from/to results module
 // => GetResults(index)
 // <= SearchResults(...)
-case class GetResults(index: String)
+case class GetResults(indices: Indices)
 
 // => ShowResults
 // <= CommandSuccess
@@ -64,7 +64,7 @@ case class ShowResults(terms: List[String] = Nil) extends Command
 
 // => ReplaceResults(index, results)
 // <= CommandSuccess
-case class ReplaceResults(index: String, entries: List[SearchResult]) extends Command
+case class ReplaceResults(indices: Indices, entries: List[SearchResult]) extends Command
 
 // => ImportedResult
 // ASYNC

@@ -27,12 +27,12 @@ class Wizard(val repl: ActorRef, val console: ActorRef, val settings: Settings) 
       }
 
       sender ! CommandSuccess
-    case Command2("edit", ind) =>
-      syncMessage[SearchResults](resultsModule, GetResults(ind)) match {
+    case Command2("edit", Indices(ids)) =>
+      syncMessage[SearchResults](resultsModule, GetResults(ids)) match {
         case Some(SearchResults(res)) =>
           val newResults = res.map(doEdit)
 
-          syncCommand(resultsModule, ReplaceResults(ind, newResults))
+          syncCommand(resultsModule, ReplaceResults(ids, newResults))
         case _ =>
           console ! Error("Invalid index")
       }

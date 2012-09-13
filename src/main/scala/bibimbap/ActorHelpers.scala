@@ -10,7 +10,7 @@ import scala.concurrent.util.duration._
 import scala.concurrent.ExecutionContext
 
 trait ActorHelpers extends Actor {
-  val fastTimeout: Timeout = Timeout(5.seconds)
+  val fastTimeout: Timeout  = Timeout(5.seconds)
   val neverTimeout: Timeout = Timeout(365.days)
   implicit val timeout: Timeout = neverTimeout
 
@@ -35,11 +35,11 @@ trait ActorHelpers extends Actor {
     }
   }
 
-  def syncCommand(actor: ActorRef, cmd: Any)(implicit timeout: Timeout): Option[CommandResult] = {
-    dispatchMessage[CommandResult](cmd, List(actor)).headOption
-  }
 
   def syncMessage[T: ClassTag](actor: ActorRef, cmd: Any)(implicit timeout: Timeout): Option[T] = {
     dispatchMessage[T](cmd, List(actor)).headOption
   }
+
+  def syncCommand(actor: ActorRef, cmd: Any)(implicit timeout: Timeout) =
+    syncMessage[CommandResult](actor, cmd)
 }

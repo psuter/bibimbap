@@ -19,30 +19,14 @@ class Search(val repl: ActorRef,
 
   lazy val resultsModule = modules("results")
 
-  private val Range  = """(\d+)-(\d+)""".r
-  private val Single = """(\d+)""".r
-  private def getSources(index: String): Option[List[SearchSource]] = {
-    index match {
-      case "*" =>
-        Some(searchSources)
-      case Range(lower, upper) =>
-        val l = lower.toInt
-        val u = upper.toInt
-        if (l <= u && l >= 0 && u < searchSources.size) {
-          Some(searchSources.slice(l, u + 1))
-        } else {
-          None
-        }
-      case Single(index) =>
-        val i = index.toInt
-        if (i < searchSources.size && i >= 0) {
-          Some(List(searchSources(i)))
-        } else {
-          None
-        }
-      case _ =>
-        None
-    }
+  private def addSource(path: String) {
+    val actor = context.actorOf(Props(new SearchBibtex(self, console, settings, path)))
+
+    syncCommand(actor, Start)
+
+    searchSources = searchSources :+ SearchSource(actor, "bibtex: "+path)
+
+    console ! Success("Source added!")
   }
 
   override def receive: Receive = {
@@ -60,8 +44,8 @@ class Search(val repl: ActorRef,
       }
       sender ! CommandSuccess
 
-    case Command3("sources", "enable", ind) =>
-      getSources(ind) match {
+    case Command3("sources", "enable", Indices(ids)) =>
+      ids.within(searchSources) match {
         case Some(rs) =>
           for (r <- rs) {
             r.isActive = true
@@ -72,8 +56,8 @@ class Search(val repl: ActorRef,
       }
       sender ! CommandSuccess
 
-    case Command3("sources", "disable", ind) =>
-      getSources(ind) match {
+    case Command3("sources", "disable", Indices(ids)) =>
+      ids.within(searchSources) match {
         case Some(rs) =>
           for (r <- rs) {
             r.isActive = false
@@ -85,13 +69,11 @@ class Search(val repl: ActorRef,
       sender ! CommandSuccess
 
     case Command3("sources", "add", path) =>
-      val actor = context.actorOf(Props(new SearchBibtex(self, console, settings, path)))
+      addSource(path)
+      sender ! CommandSuccess
 
-      syncCommand(actor, Start)
-
-      searchSources = searchSources :+ SearchSource(actor, "bibtex: "+path)
-
-      console ! Success("Source added!")
+    case Command3("load", path) =>
+      addSource(path)
       sender ! CommandSuccess
 
     case CommandL("search", args) =>
@@ -193,6 +175,7 @@ class Search(val repl: ActorRef,
     "search"          -> HelpEntry("search <terms..>",         "Searches for <terms> using the various search providers"),
     "sources"         -> HelpEntry("sources",                  "Lists available search sources"),
     "sources add"     -> HelpEntry("sources add <path>",       "Adds bibfile as additional source"),
+    "load"            -> HelpEntry("load <path>",              "Adds bibfile as additional source"),
     "sources enable"  -> HelpEntry("sources enable <index>",   "Enables source"),
     "sources disable" -> HelpEntry("sources disable <index>",  "Disables source")
   )

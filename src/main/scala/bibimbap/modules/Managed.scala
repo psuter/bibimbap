@@ -46,24 +46,24 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
     case Search(terms) =>
       sender ! search(terms)
 
-    case Command2("delete", ind) =>
-      syncMessage[SearchResults](modules("results"), GetResults(ind)) match {
+    case Command2("delete", Indices(ids)) =>
+      syncMessage[SearchResults](modules("results"), GetResults(ids)) match {
         case Some(SearchResults(rs)) =>
           val newResults = rs.map(doDelete)
 
-          syncCommand(modules("results"), ReplaceResults(ind, newResults))
+          syncCommand(modules("results"), ReplaceResults(ids, newResults))
         case None =>
           console ! Error("Invalid search result")
       }
       sender ! CommandSuccess
 
 
-    case Command2("import", ind) =>
-      syncMessage[SearchResults](modules("results"), GetResults(ind)) match {
+    case Command2("import", Indices(ids)) =>
+      syncMessage[SearchResults](modules("results"), GetResults(ids)) match {
         case Some(SearchResults(rs)) =>
           val newResults = rs.map(doImport)
 
-          syncCommand(modules("results"), ReplaceResults(ind, newResults))
+          syncCommand(modules("results"), ReplaceResults(ids, newResults))
         case None =>
           console ! Error("Invalid search result")
       }

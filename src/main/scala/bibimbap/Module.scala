@@ -25,7 +25,7 @@ trait Module extends Actor with ActorHelpers {
         helpItems(command).display(console)
       }
       sender ! CommandSuccess
-    case Command1("help") =>
+    case Command1("help" | "?") =>
       for ((command, hi) <- helpItems) {
         helpItems(command).displayShort(console)
       }
@@ -44,15 +44,19 @@ trait Module extends Actor with ActorHelpers {
       sender ! Completed(res, index)
 
     case InputCommand(line) =>
-      var continue = true
-      for (he <- helpItems.keySet.toSeq.sortBy(-_.length) if continue && (line startsWith he)) {
+      var foundPartial = false
+      for (he <- helpItems.keySet.toSeq.sortBy(-_.length) if !foundPartial && (line startsWith he)) {
         val hi = helpItems(he)
         console ! Error("Incorrect use of "+he+":")
         console ! Error("Usage: "+hi.command+": "+hi.short)
 
-        continue = false;
+        foundPartial = true;
       }
-      sender ! CommandSuccess
+      if (foundPartial) {
+        sender ! CommandSuccess
+      } else {
+        sender ! CommandUnknown
+      }
 
     case _ =>
       sender ! CommandUnknown

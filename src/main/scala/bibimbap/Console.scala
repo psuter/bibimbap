@@ -30,7 +30,7 @@ class Console(repl: ActorRef, settings: Settings, historyFileName: String) exten
           super.isSupported
         }
       }
-    
+
     case u: UnsupportedTerminal =>
       new UnsupportedTerminal {
         override def isSupported = {
