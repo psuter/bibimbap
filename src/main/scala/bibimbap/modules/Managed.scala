@@ -25,7 +25,7 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
 
   def computeManagedHash(): Option[String] = FileUtils.md5(managedFile)
 
-  override def searchLucene(query: String) = super.searchLucene(query).map(_.copy(isManaged = true))
+  override def searchLucene(query: String, limit: Int) = super.searchLucene(query, limit).map(_.copy(isManaged = true))
 
   def loadFile() {
     if(managedFile.exists && managedFile.isFile && managedFile.canRead) {
@@ -43,8 +43,8 @@ class Managed(val repl: ActorRef, val console: ActorRef, val settings: Settings)
       loadFile()
     }
 
-    case Search(terms) =>
-      sender ! search(terms)
+    case Search(terms, limit) =>
+      sender ! search(terms, limit)
 
     case Command2("delete", Indices(ids)) =>
       syncMessage[SearchResults](modules("results"), GetResults(ids)) match {

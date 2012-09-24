@@ -61,11 +61,11 @@ trait LuceneBackend {
     keySet -= key
   }
 
-  def searchLucene(query: String): List[SearchResult] =
-    searchLuceneRaw(QueryParser.escape(query))
+  def searchLucene(query: String, limit: Int): List[SearchResult] =
+    searchLuceneRaw(QueryParser.escape(query), limit)
 
-  def searchLuceneRaw(query: String): List[SearchResult] =
-    searchEntries(query).flatMap{ case (doc, score) => documentToSearchResult(doc, score) }.toList
+  def searchLuceneRaw(query: String, limit: Int): List[SearchResult] =
+    searchEntries(query, limit).flatMap{ case (doc, score) => documentToSearchResult(doc, score) }.toList
 
   def addEntry(entry: BibTeXEntry): Unit =
     addEntries(List(entry))
@@ -107,12 +107,11 @@ trait LuceneBackend {
     writer.close()
   }
 
-  private def searchEntries(query : String) : Iterable[(Document, Double)] = {
+  private def searchEntries(query : String, limit: Int) : Iterable[(Document, Double)] = {
     val q = new QueryParser(Version.LUCENE_36, "__blob", analyzer).parse(query)
-    val hitsPerPage = 10
     val reader = IndexReader.open(index)
     val searcher = new IndexSearcher(reader)
-    val collector = TopScoreDocCollector.create(hitsPerPage, true)
+    val collector = TopScoreDocCollector.create(limit, true)
     searcher.search(q, collector)
     val hits : Array[ScoreDoc] = collector.topDocs.scoreDocs
     val docs = hits.map(hit => (searcher.doc(hit.doc), hit.score.toDouble))
@@ -179,12 +178,12 @@ trait LuceneSearchProvider extends SearchProvider {
     initializeIndex()
   }
 
-  override def search(terms: List[String]): SearchResults = {
+  override def search(terms: List[String], limit: Int): SearchResults = {
     val query = terms.mkString(" ").trim
     if(query.isEmpty) {
       SearchResults(Nil)
     } else {
-      SearchResults(searchLucene(query))
+      SearchResults(searchLucene(query, limit))
     }
   }
 

@@ -83,7 +83,7 @@ class Search(val repl: ActorRef,
       sender ! CommandSuccess
 
     case CommandL("search", args) =>
-      val results = doSearch(args)
+      val results = doSearch(args, 10)
 
       syncCommand(resultsModule, SearchResults(results))
       syncCommand(resultsModule, ShowResults(args))
@@ -95,13 +95,13 @@ class Search(val repl: ActorRef,
         m ! ImportedResult(res)
       }
 
-    case Search(terms) =>
-      val results = doSearch(terms)
+    case Search(terms, limit) =>
+      val results = doSearch(terms, limit)
       sender ! SearchResults(results)
 
     case SearchSimilar(entry: BibTeXEntry) =>
       if (preciseEnough(entry)) {
-        val results = doSearch(termsFromEntry(entry))
+        val results = doSearch(termsFromEntry(entry), 1)
         sender ! SimilarEntry(entry, results.headOption.map(_.entry))
       } else {
         sender ! SimilarEntry(entry, None)
@@ -121,9 +121,9 @@ class Search(val repl: ActorRef,
 
   def activeSources: List[SearchSource] = searchSources.filter(_.isActive)
 
-  private def doSearch(args: List[String]): List[SearchResult] = {
+  private def doSearch(args: List[String], limit: Int): List[SearchResult] = {
     try {
-      val resultsPerSearch = dispatchMessage[SearchResults](Search(args), activeSources.map(_.actor))
+      val resultsPerSearch = dispatchMessage[SearchResults](Search(args, limit), activeSources.map(_.actor))
       combineResults(resultsPerSearch)
     } catch {
       case e: TimeoutException =>

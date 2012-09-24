@@ -22,13 +22,12 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
   val name   = "Search DBLP"
   val source = "dblp"
 
-  private val searchURLPrefix  = "http://www.dblp.org/search/api/?q="
-  private val searchURLPostfix = "&h=10&c=4&f=0&format=json"
+  private val searchURL  = "http://www.dblp.org/search/api/?q=%s&h=%d&c=4&f=0&format=json"
 
-  override def search(terms: List[String]): SearchResults = {
+  override def search(terms: List[String], limit: Int): SearchResults = {
     val results = try {
       val pattern = URLEncoder.encode(terms.mkString(" "), "UTF-8")
-      val url = new URL(searchURLPrefix + pattern + searchURLPostfix)
+      val url = new URL(searchURL.format(pattern, limit))
       // info("DBLP query URL : [" + url + "].")
       val urlCon = url.openConnection()
       urlCon.setConnectTimeout(10000)

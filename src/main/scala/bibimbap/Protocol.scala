@@ -39,7 +39,7 @@ case class Completed(candidates: List[String], index: Int) extends Command
 // Protocol to/from search module
 //  => Search(terms)
 //  <= SearchResults(...)
-case class Search(terms: List[String])
+case class Search(terms: List[String], limit: Int)
 
 //  => SearchSimilar(entry)
 //  <= SimilarEntry(entry, newentry)
