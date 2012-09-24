@@ -129,6 +129,7 @@ class Consolidate(val repl: ActorRef, val console: ActorRef, val settings: Setti
 
       fw.close
 
+      console ! Success("Modified "+modified+" entries.")
       console ! Success("Consolidated file saved to "+consolidatePath)
 
       consolidater ! CommandSuccess
