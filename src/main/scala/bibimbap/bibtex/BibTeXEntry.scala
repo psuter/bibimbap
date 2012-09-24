@@ -220,7 +220,11 @@ case class BibTeXEntry(tpe: Option[BibTeXEntryTypes.BibTeXEntryType],
 
     def shortenName(name : String) : String = {
       val elements = name.split(" ").filterNot(_.isEmpty)
-      elements.dropRight(1).map(e => e(0) + ".").mkString("") + elements.last
+      if (elements.size > 1) {
+        elements.dropRight(1).map(e => e(0) + ".").mkString("") + elements.last
+      } else {
+        name
+      }
     }
 
     val (persons,areEditors) = if(!authors.isEmpty) {
