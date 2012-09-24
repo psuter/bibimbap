@@ -3,6 +3,7 @@ package bibimbap
 import scala.reflect.ClassTag
 import akka.actor._
 import akka.pattern.ask
+import akka.routing.RoundRobinRouter
 import akka.util.Timeout
 import java.util.concurrent.Executors
 import scala.concurrent.Await
@@ -35,11 +36,12 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
     )
 
     modules = Map(
-      "general" -> context.actorOf(Props(new General(self, console, settings)),                 name = "general"),
-      "search"  -> context.actorOf(Props(new Search(self, console, settings, searchSources)),   name = "search"),
-      "results" -> context.actorOf(Props(new ResultStore(self, console, settings)),             name = "results"),
-      "wizard"  -> context.actorOf(Props(new Wizard(self, console, settings)),                  name = "wizard"),
-      "managed" -> managed
+      "general"     -> context.actorOf(Props(new General(self, console, settings)),                 name = "general"),
+      "search"      -> context.actorOf(Props(new Search(self, console, settings, searchSources)),   name = "search"),
+      "results"     -> context.actorOf(Props(new ResultStore(self, console, settings)),             name = "results"),
+      "wizard"      -> context.actorOf(Props(new Wizard(self, console, settings)),                  name = "wizard"),
+      "consolidate" -> context.actorOf(Props(new Consolidate(self, console, settings)),             name = "consolidate"),
+      "managed"     -> managed
     )
 
   }
@@ -54,10 +56,10 @@ class Repl(homeDir: String, configFileName: String, historyFileName: String) ext
         true
       case CommandException(e)    =>
         console ! Error(e.getMessage)
-        false
+        true
       case CommandError(msg)      =>
         console ! Error(msg)
-        false
+        true
       case _ =>
         false
     }

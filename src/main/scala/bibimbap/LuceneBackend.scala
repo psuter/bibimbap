@@ -62,6 +62,9 @@ trait LuceneBackend {
   }
 
   def searchLucene(query: String): List[SearchResult] =
+    searchLuceneRaw(QueryParser.escape(query))
+
+  def searchLuceneRaw(query: String): List[SearchResult] =
     searchEntries(query).flatMap{ case (doc, score) => documentToSearchResult(doc, score) }.toList
 
   def addEntry(entry: BibTeXEntry): Unit =

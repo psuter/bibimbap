@@ -41,14 +41,10 @@ case class Completed(candidates: List[String], index: Int) extends Command
 //  <= SearchResults(...)
 case class Search(terms: List[String])
 
-//  => SearchOne(terms)
-//  <= SearchResults(Nil  |  x :: Nil)
-case class SearchOne(terms: List[String])
-
-//  => Consolidate(entry)
-//  <= Consolidated(newentry)
-case class Consolidate(entry: BibTeXEntry)
-case class Consolidated(entry: BibTeXEntry)
+//  => SearchSimilar(entry)
+//  <= SimilarEntry(entry, newentry)
+case class SearchSimilar(entry: BibTeXEntry)
+case class SimilarEntry(entry: BibTeXEntry, optNewEntry: Option[BibTeXEntry])
 
 case class SearchResults(entries: List[SearchResult])
 

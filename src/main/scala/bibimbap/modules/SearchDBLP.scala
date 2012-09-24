@@ -22,6 +22,9 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
   val name   = "Search DBLP"
   val source = "dblp"
 
+  private val searchURLPrefix  = "http://www.dblp.org/search/api/?q="
+  private val searchURLPostfix = "&h=10&c=4&f=0&format=json"
+
   override def search(terms: List[String]): SearchResults = {
     val results = try {
       val pattern = URLEncoder.encode(terms.mkString(" "), "UTF-8")
@@ -55,9 +58,6 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
 
     SearchResults(results)
   }
-
-  private val searchURLPrefix  = "http://www.dblp.org/search/api/?q="
-  private val searchURLPostfix = "&h=10&c=4&f=0&format=json"
 
   private def extractJSONRecords(text : String) : Seq[JValue] = {
     val jvalue = new JSONParser().parse(text)

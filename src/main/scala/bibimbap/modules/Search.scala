@@ -99,12 +99,24 @@ class Search(val repl: ActorRef,
       val results = doSearch(terms)
       sender ! SearchResults(results)
 
-    case SearchOne(terms) =>
-      val results = doSearch(terms)
-      sender ! SearchResults(results.headOption.toList)
+    case SearchSimilar(entry: BibTeXEntry) =>
+      if (preciseEnough(entry)) {
+        val results = doSearch(termsFromEntry(entry))
+        sender ! SimilarEntry(entry, results.headOption.map(_.entry))
+      } else {
+        sender ! SimilarEntry(entry, None)
+      }
 
     case x =>
       super.receive(x)
+  }
+
+  private def preciseEnough(e: BibTeXEntry): Boolean = {
+    !e.title.isEmpty
+  }
+
+  private def termsFromEntry(e: BibTeXEntry): List[String] = {
+    (e.title ++ e.authors).map(_.toJava).toList
   }
 
   def activeSources: List[SearchSource] = searchSources.filter(_.isActive)
@@ -160,20 +172,12 @@ class Search(val repl: ActorRef,
     sorted
   }
 
-  private lazy val fileNamesCompletor = new jline.FileNameCompletor()
-
   override def complete(buffer: String, pos: Int): (List[String], Int) = {
-    import collection.JavaConversions._
-    if (buffer.startsWith("sources add ") && pos >= "sources add ".length) {
-      val newbuffer = buffer.substring("sources add ".length, buffer.length) 
-      val newpos    = pos - "sources add ".length
+    val SourcesAdd = FileCompletor("sources add ")
 
-      val list  = new java.util.ArrayList[String]()
-      val index = fileNamesCompletor.complete(newbuffer, newpos, list)
-
-      (list.toList, index + "sources add ".length)
-    } else {
-      (Nil, 0)
+    (buffer, pos) match {
+      case SourcesAdd(alts, pos) => (alts, pos)
+      case _ => (Nil, 0)
     }
   }
 

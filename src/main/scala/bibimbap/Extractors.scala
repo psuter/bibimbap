@@ -71,3 +71,29 @@ object Indices {
     }
   }
 }
+
+object FileCompletor {
+  lazy val jlineCompletor = new jline.FileNameCompletor()
+}
+
+case class FileCompletor(prefix: String) {
+
+  def unapply(info: (String, Int)): Option[(List[String], Int)] = {
+    import collection.JavaConversions._
+
+    val buffer = info._1
+    val pos    = info._2
+
+    if (buffer.startsWith(prefix) && pos >= prefix.length) {
+      val newbuffer = buffer.substring(prefix.length, buffer.length)
+      val newpos    = pos - prefix.length
+
+      val list  = new java.util.ArrayList[String]()
+      val index = FileCompletor.jlineCompletor.complete(newbuffer, newpos, list)
+
+      Some((list.toList, index + prefix.length))
+    } else {
+      None
+    }
+  }
+}
