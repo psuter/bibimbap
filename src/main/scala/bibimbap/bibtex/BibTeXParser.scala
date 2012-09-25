@@ -66,7 +66,15 @@ class BibTeXParser(src : Source, error : String=>Unit) {
   }
 
   private def importXRef(to: RawEntry, xref: RawEntry): RawEntry = {
-    to
+    var newPairs = to.pairs
+
+    var fields = BibTeXEntryTypes.relevantFieldsFor(BibTeXEntryTypes.withNameOpt(to.kind))
+
+    for (field <- fields if !newPairs.contains(field) && xref.pairs.contains(field)) {
+      newPairs += field -> xref.pairs(field)
+    }
+
+    to.copy(pairs = newPairs)
   }
 
   private def parseError(msg : String, token : Token) : Nothing = throw new BibTeXParseError(msg + " " + posString(token.position))
@@ -152,11 +160,9 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     // check whether Xref is defined
     result match {
       case Some(e) =>
-        val pairsMap = e.pairs.toMap
-
         definedXRef += e.key -> e
 
-        pairsMap.get("crossref") match {
+        e.pairs.get("crossref") match {
           case Some(xr) if definedXRef contains xr =>
             Some(importXRef(e, definedXRef(xr)))
 

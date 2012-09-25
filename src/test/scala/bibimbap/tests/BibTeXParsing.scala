@@ -33,7 +33,7 @@ class BibTeXParsing extends FunSuite with ShouldMatchers {
     """
     
     val (entries, errors) = entriesAndErrors(src)
-    entries.size should equal (2)
+    entries should have size (2)
     errors should equal (0)
   }
 
@@ -48,7 +48,7 @@ class BibTeXParsing extends FunSuite with ShouldMatchers {
     """
     
     val (entries, errors) = entriesAndErrors(src)
-    entries.size should equal (1)
+    entries should have size (1)
     errors should equal (1)
   }
 
@@ -64,7 +64,7 @@ class BibTeXParsing extends FunSuite with ShouldMatchers {
     """
 
     val (entries, errors) = entriesAndErrors(src)
-    entries.size should equal (0)
+    entries should have size (0)
     errors should equal (2)
   }
 
@@ -84,7 +84,7 @@ class BibTeXParsing extends FunSuite with ShouldMatchers {
     """
     
     val (entries, errors) = entriesAndErrors(src)
-    entries.size should equal (2)
+    entries should have size (2)
     errors should equal (0)
   }
 
@@ -104,7 +104,7 @@ class BibTeXParsing extends FunSuite with ShouldMatchers {
     """
 
     val (entries, errors) = entriesAndErrors(src)
-    entries.size should equal (2)
+    entries should have size (2)
     errors should equal (1)
   }
 
@@ -124,7 +124,37 @@ class BibTeXParsing extends FunSuite with ShouldMatchers {
     """
     
     val (entries, errors) = entriesAndErrors(src)
-    entries.size should equal (2)
+    entries should have size (2)
+    errors should equal (0)
+  }
+
+  test("Importing Crossref Data") {
+    val src = """
+      @inproceedings{Thor2012OnEntries,
+        title  = "On " # "BibTeX {"}Entries{"}",
+        author = {Alfred U. Thor},
+        year   = 2012,
+        crossref = {TheCrossRef},
+        booktitle = {{BIG}CONF}
+      }
+      @article{ TheCrossRef,
+        title={All {CAPS}, A Keyboard Memoir},
+        author = "Quentin Werty",
+        year=1976,
+        journal="Keystroke Prenvention",
+        publisher="publisher xref",
+        note="note xref"
+      }
+    """
+    
+    val (entries, errors) = entriesAndErrors(src)
+    entries should have size (2)
+
+    val containsPublisher = entries.forall(_.publisher.map(_.toJava) == Some("publisher xref"))
+    val containsNote      = entries.forall(_.note.map(_.toJava) == Some("note xref"))
+
+    containsPublisher should be (true)
+    containsNote  should be (true)
     errors should equal (0)
   }
 }

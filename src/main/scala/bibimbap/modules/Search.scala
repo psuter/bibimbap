@@ -78,7 +78,7 @@ class Search(val repl: ActorRef,
       addSource(path)
       sender ! CommandSuccess
 
-    case Command3("load", path) =>
+    case Command2("load", path) =>
       addSource(path)
       sender ! CommandSuccess
 
@@ -174,9 +174,11 @@ class Search(val repl: ActorRef,
 
   override def complete(buffer: String, pos: Int): (List[String], Int) = {
     val SourcesAdd = FileCompletor("sources add ")
+    val Load       = FileCompletor("load ")
 
     (buffer, pos) match {
       case SourcesAdd(alts, pos) => (alts, pos)
+      case Load(alts, pos) => (alts, pos)
       case _ => (Nil, 0)
     }
   }

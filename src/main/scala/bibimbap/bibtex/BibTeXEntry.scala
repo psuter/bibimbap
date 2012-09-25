@@ -75,6 +75,9 @@ object BibTeXEntryTypes extends Enumeration {
 
   def optionalFieldsFor(otpe: Option[BibTeXEntryType]): List[String] = otpe.map(optionalFieldsFor).getOrElse(List())
 
+  def relevantFieldsFor(otpe: Option[BibTeXEntryType]): List[String] =
+    requiredFieldsFor(otpe).flatMap(_.toFields) ++ optionalFieldsFor(otpe)
+
   val allStdFields = Set("address", "abstract", "annote", "author",
       "booktitle", "chapter", "crossref", "edition", "editor", "eprint",
       "howpublished", "institution", "journal", "key", "month", "note", "number",
@@ -93,7 +96,7 @@ case class BibTeXEntry(tpe: Option[BibTeXEntryTypes.BibTeXEntryType],
 
   lazy val requiredFields = BibTeXEntryTypes.requiredFieldsFor(tpe)
   lazy val optionalFields = BibTeXEntryTypes.optionalFieldsFor(tpe)
-  lazy val stdFields      = requiredFields.flatMap(_.toFields) ++ optionalFields
+  lazy val stdFields      = BibTeXEntryTypes.relevantFieldsFor(tpe)
 
   // convenience fields
   val address      : Option[MString] = fields.get("address")
