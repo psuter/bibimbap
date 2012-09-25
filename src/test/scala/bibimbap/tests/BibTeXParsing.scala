@@ -157,4 +157,10 @@ class BibTeXParsing extends FunSuite with ShouldMatchers {
     containsNote  should be (true)
     errors should equal (0)
   }
+
+  test("No errors for empty files") {
+    val (entries, errors) = entriesAndErrors("")
+    entries should have size (0)
+    errors should equal (0)
+  }
 }
