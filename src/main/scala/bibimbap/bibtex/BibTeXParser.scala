@@ -54,10 +54,10 @@ class BibTeXParser(src : Source, error : String=>Unit) {
 
       val prefix = e match {
         case Some(xr) =>
-          val res = pendingXRef(xr.key).map(pe => Some(importXRef(pe, xr)))
+          val res = pendingXRef(xr.key).map(pe => Some(inlineXRef(pe, xr)))
           pendingXRef -= xr.key
           Stream.empty ++ res
-        case None =>   
+        case None =>
           Stream.empty
       }
 
@@ -65,8 +65,8 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     }
   }
 
-  private def importXRef(to: RawEntry, xref: RawEntry): RawEntry = {
-    var newPairs = to.pairs
+  private def inlineXRef(to: RawEntry, xref: RawEntry): RawEntry = {
+    var newPairs = to.pairs - "crossref"
 
     var fields = BibTeXEntryTypes.relevantFieldsFor(BibTeXEntryTypes.withNameOpt(to.kind))
 
@@ -164,7 +164,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
 
         e.pairs.get("crossref") match {
           case Some(xr) if definedXRef contains xr =>
-            Some(importXRef(e, definedXRef(xr)))
+            Some(inlineXRef(e, definedXRef(xr)))
 
           case Some(xr) =>
             pendingXRef += xr -> (pendingXRef(xr) + e)
