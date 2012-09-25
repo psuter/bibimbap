@@ -7,55 +7,26 @@ import bibtex._
 import strings._
 import util.StringUtils
 
-import scala.io.Source
-
-import java.net.URL
 import java.net.URLEncoder
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
-import java.io.IOException
 
 import json._
+import io.Source
 
-class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends SearchProvider {
+class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settings) extends SearchProvider with WebProvider {
   val name   = "Search DBLP"
   val source = "dblp"
 
   private val searchURL  = "http://www.dblp.org/search/api/?q=%s&h=%d&c=4&f=0&format=json"
 
   override def search(terms: List[String], limit: Int): SearchResults = {
-    val results = try {
-      val pattern = URLEncoder.encode(terms.mkString(" "), "UTF-8")
-      val url = new URL(searchURL.format(pattern, limit))
-      // info("DBLP query URL : [" + url + "].")
-      val urlCon = url.openConnection()
-      urlCon.setConnectTimeout(10000)
-      urlCon.setReadTimeout(10000)
-      val content = Source.fromInputStream(urlCon.getInputStream)
-      val text = content.getLines.mkString(" ")
+    val pattern = URLEncoder.encode(terms.mkString(" "), "UTF-8")
 
-      extractJSONRecords(text).flatMap(recordToResult).toList
-    } catch {
-      case ioe : IOException => {
-        console ! Warning("IO error: " + ioe.getLocalizedMessage)
-        Nil
-      }
-      case ce : ConnectException => {
-        console ! Warning("Connection error: " + ce.getLocalizedMessage)
-        Nil
-      }
-      case ste : SocketTimeoutException => {
-        console ! Warning("Network error: " + ste.getLocalizedMessage)
-        Nil
-      }
-      case uhe : UnknownHostException => {
-        console ! Warning("Network error (unknown host): " + uhe.getLocalizedMessage)
-        Nil
-      }
+    HTTPQueryAsString(searchURL.format(pattern, limit)) match {
+      case Some(text) =>
+        SearchResults(extractJSONRecords(text).flatMap(recordToResult).map(completeRecord).toList)
+      case None =>
+        SearchResults(Nil)
     }
-
-    SearchResults(results)
   }
 
   private def extractJSONRecords(text : String) : Seq[JValue] = {
@@ -99,6 +70,13 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
 
     val optKey = None;
 
+    val url = (record \ "url") match {
+      case JString(str) =>
+        Some(MString.fromJava(str))
+      case _ =>
+        None
+    }
+
     (record \ "title") match {
       case obj : JObject => {
         val authors : MString = MString.fromJava(((obj \ "dblp:authors" \ "dblp:author") match {
@@ -127,6 +105,8 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
             (None, None)
         }
 
+
+
         val year : Option[MString] = (obj \ "dblp:year") match {
           case JInt(bigInt) => Some(MString.fromJava(bigInt.toString))
           case _ => None
@@ -148,6 +128,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
                 "year"      -> yr2yr(venueYear).orElse(year),
                 "pages"     -> pages.map(MString.fromJava),
                 "link"      -> link,
+                "url"       -> url,
                 "doi"       -> doi,
                 "dblp"      -> dblpID
             )
@@ -182,6 +163,7 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
                 "number"    -> num.map(MString.fromJava),
                 "pages"     -> pgs.map(MString.fromJava),
                 "link"      -> link,
+                "url"       -> url,
                 "doi"       -> doi,
                 "dblp"      -> dblpID
               )
@@ -201,6 +183,24 @@ class SearchDBLP(val repl: ActorRef, val console: ActorRef, val settings: Settin
         }
       }
       case _ => None
+    }
+  }
+
+  private def completeRecord(res: SearchResult): SearchResult = {
+    res.entry.url.map(_.toJava).flatMap(HTTPQueryAsString(_)) match {
+      case Some(html) =>
+        val entries = ("""<pre>(.*?)</pre>""".r findAllIn html).toList.map(_.replaceAll("</?(pre|a)[^>]*>", ""))
+
+        val parser = new BibTeXParser(Source.fromString(entries.mkString("\n\n")), console ! Warning(_))
+
+        parser.entries.toList match {
+          case mainEntry :: crossRef :: _ =>
+            res.copy(entry = mainEntry)
+          case _ =>
+            res
+        }
+      case None =>
+        res
     }
   }
 
