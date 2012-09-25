@@ -43,7 +43,14 @@ class BibTeXParser(src : Source, error : String=>Unit) {
   private var definedXRef = Map[String, RawEntry]()
   private var pendingXRef = Map[String, Set[RawEntry]]().withDefaultValue(Set())
 
+  private var firstTime : Boolean = true
+
   private def rawEntries : Stream[Option[RawEntry]] = {
+    if(firstTime) {
+      firstTime = false
+      nextToken
+    }
+
     if(lastToken == EOF()) {
       if (!pendingXRef.isEmpty) {
         error("Found entries linking to missing crossrefs: "+pendingXRef.keySet.mkString(", "))
@@ -109,13 +116,7 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     }
   }
 
-  private var firstTime : Boolean = true
   private def parseEntry : Option[RawEntry] = {
-    if(firstTime) {
-      firstTime = false
-      nextToken
-    }
-
     val kind = tryOrSkipUntil {
       eat(_ == AT())
       parseID.toLowerCase

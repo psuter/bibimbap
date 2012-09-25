@@ -62,13 +62,13 @@ object BibTeXEntryTypes extends Enumeration {
     Book            -> List("volume", "series", "address", "edition", "month", "note", "key", "pages"),
     Booklet         -> List("author", "howpublished", "address", "month", "year", "note", "key"),
     InBook          -> List("volume", "series", "address", "edition", "month", "note", "key"),
-    InCollection    -> List("editor", "pages", "organization", "publisher", "address", "month", "note", "key"),
-    InProceedings   -> List("editor", "pages", "organization", "publisher", "address", "month", "note", "key"),
+    InCollection    -> List("editor", "volume", "number", "series", "type", "chapter", "pages", "address", "edition", "month", "note", "key"),
+    InProceedings   -> List("editor", "volume", "number", "series", "pages", "address", "month", "organization", "publisher", "note", "key"),
     Manual          -> List("author", "organization", "edition", "address", "year", "month", "note", "key"),
     MastersThesis   -> List("address", "month", "note", "key"),
     Misc            -> List("author", "howpublished", "title", "month", "year", "note", "key"),
     PhDThesis       -> List("address", "month", "note", "key"),
-    Proceedings     -> List("editor", "organization", "publisher", "address", "month", "note", "key"),
+    Proceedings     -> List("editor", "volume", "number", "series", "address", "month", "publisher", "organization", "note", "key"),
     TechReport      -> List("type", "number", "address", "month", "note", "key"),
     Unpublished     -> List("month", "year", "key")
   ).withDefaultValue(List())
