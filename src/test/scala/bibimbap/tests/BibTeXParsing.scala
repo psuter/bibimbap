@@ -8,11 +8,13 @@ import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 
 class BibTeXParsing extends FunSuite with ShouldMatchers {
-  def entriesAndErrors(str : String) : (Seq[BibTeXEntry],Int) = {
+  def exhaustStream[T](s: Stream[T]): List[T] = s.toList
+
+  def entriesAndErrors(str : String) : (List[BibTeXEntry],Int) = {
     var errorCount : Int = 0
-    def errorHandler(s : String) : Unit = { errorCount += 1 }
+    def errorHandler(s : String) : Unit = { errorCount += 1; }
     val parser = new BibTeXParser(Source.fromString(str), errorHandler)
-    val entries = parser.entries.toSeq
+    val entries = exhaustStream(parser.entries)
     (entries, errorCount)
   }
 
@@ -64,5 +66,65 @@ class BibTeXParsing extends FunSuite with ShouldMatchers {
     val (entries, errors) = entriesAndErrors(src)
     entries.size should equal (0)
     errors should equal (2)
+  }
+
+  test("Valid Crossref") {
+    val src = """
+      @inproceedings{Thor2012OnEntries,
+        title  = "On " # "BibTeX {"}Entries{"}",
+        author = {Alfred U. Thor},
+        year   = 2012,
+        crossref = {ThisKeyIsDroppedByBibimbap},
+        booktitle = {{BIG}CONF}
+      }
+      @article{ ThisKeyIsDroppedByBibimbap ,
+        title={All {CAPS}, A Keyboard Memoir},
+        author = "Quentin Werty", year=1976, journal="Keystroke Prenvention"
+      }
+    """
+    
+    val (entries, errors) = entriesAndErrors(src)
+    entries.size should equal (2)
+    errors should equal (0)
+  }
+
+  test("Missing Crossref") {
+    val src = """
+      @inproceedings{Thor2012OnEntries,
+        title  = "On " # "BibTeX {"}Entries{"}",
+        author = {Alfred U. Thor},
+        year   = 2012,
+        crossref = {Whatisthis},
+        booktitle = {{BIG}CONF}
+      }
+      @article{ ThisKeyIsDroppedByBibimbap ,
+        title={All {CAPS}, A Keyboard Memoir},
+        author = "Quentin Werty", year=1976, journal="Keystroke Prenvention"
+      }
+    """
+
+    val (entries, errors) = entriesAndErrors(src)
+    entries.size should equal (2)
+    errors should equal (1)
+  }
+
+  test("Preceeding Crossref") {
+    val src = """
+      @article{ ThisKeyIsDroppedByBibimbap ,
+        title={All {CAPS}, A Keyboard Memoir},
+        author = "Quentin Werty", year=1976, journal="Keystroke Prenvention"
+      }
+      @inproceedings{Thor2012OnEntries,
+        title  = "On " # "BibTeX {"}Entries{"}",
+        author = {Alfred U. Thor},
+        year   = 2012,
+        crossref = {ThisKeyIsDroppedByBibimbap},
+        booktitle = {{BIG}CONF}
+      }
+    """
+    
+    val (entries, errors) = entriesAndErrors(src)
+    entries.size should equal (2)
+    errors should equal (0)
   }
 }

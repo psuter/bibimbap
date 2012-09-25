@@ -40,12 +40,33 @@ class BibTeXParser(src : Source, error : String=>Unit) {
     BibTeXEntry.fromEntryMap(kind, Some(raw.key), newMap, error)
   }
 
+  private var definedXRef = Map[String, RawEntry]()
+  private var pendingXRef = Map[String, Set[RawEntry]]().withDefaultValue(Set())
+
   private def rawEntries : Stream[Option[RawEntry]] = {
     if(lastToken == EOF()) {
-      Stream.empty
+      if (!pendingXRef.isEmpty) {
+        error("Found entries linking to missing crossrefs: "+pendingXRef.keySet.mkString(", "))
+      }
+      Stream.empty ++ pendingXRef.values.flatten.map(Some(_))
     } else {
-      Stream.cons(parseEntry, rawEntries)
+      val e = parseEntry
+
+      val prefix = e match {
+        case Some(xr) =>
+          val res = pendingXRef(xr.key).map(pe => Some(importXRef(pe, xr)))
+          pendingXRef -= xr.key
+          Stream.empty ++ res
+        case None =>   
+          Stream.empty
+      }
+
+      prefix append Stream.cons(e, rawEntries)
     }
+  }
+
+  private def importXRef(to: RawEntry, xref: RawEntry): RawEntry = {
+    to
   }
 
   private def parseError(msg : String, token : Token) : Nothing = throw new BibTeXParseError(msg + " " + posString(token.position))
@@ -128,8 +149,27 @@ class BibTeXParser(src : Source, error : String=>Unit) {
       }(_ == AT())
     }}
 
-    // result.foreach(println)
-    result
+    // check whether Xref is defined
+    result match {
+      case Some(e) =>
+        val pairsMap = e.pairs.toMap
+
+        definedXRef += e.key -> e
+
+        pairsMap.get("crossref") match {
+          case Some(xr) if definedXRef contains xr =>
+            Some(importXRef(e, definedXRef(xr)))
+
+          case Some(xr) =>
+            pendingXRef += xr -> (pendingXRef(xr) + e)
+            None
+
+          case None =>
+            Some(e)
+        }
+      case None =>
+        None
+    }
   }
 
   private def parseID : String = lastToken match {
